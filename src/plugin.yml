@@ -1,0 +1,19 @@
+name: PlatinumArenas
+main: com.strangeone101.platinumarenas.PlatinumArenas
+version: ${project.version}-r${buildNumber}
+author: StrangeOne101
+prefix: PlatinumArenas
+softdepend: [WorldEdit, ProjectKorra]
+api-version: 1.13
+commands:
+   platinumarenas:
+      description: Manage the arenas
+      default: op
+      aliases: [pta, arena, arenas]
+permissions:
+   platinumarenas.reload:
+      default: op
+   platinumarenas.create:
+      default: op
+
+         
