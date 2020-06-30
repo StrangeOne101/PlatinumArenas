@@ -23,8 +23,9 @@ public class PlatinumArenas extends JavaPlugin {
 
         ArenaCommand.createCommands();
         getCommand("platinumarenas").setExecutor(ArenaCommand.getCommandExecutor());
+        getCommand("platinumarenas").setTabCompleter(ArenaCommand.getTabCompleter());
 
-        File folder = new File(getDataFolder(), "arenas");
+        File folder = new File(getDataFolder(), "Arenas");
         if (!folder.exists()) {
             folder.mkdirs();
         }

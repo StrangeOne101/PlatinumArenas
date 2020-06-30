@@ -32,8 +32,8 @@ public class Section {
 
     public void cancelReset() {
         resetIndex = -1;
-        resetTypeIndex = -1;
-        resetAmountIndex = -1;
+        resetTypeIndex = 0;
+        resetAmountIndex = 0;
     }
 
     /**
@@ -49,7 +49,7 @@ public class Section {
             for (resetAmountIndex = resetAmountIndex; resetAmountIndex < blockAmounts[resetAmountIndex]; resetAmountIndex++) {
 
                 BlockData block = parent.getKeys()[blockTypes[resetTypeIndex]];
-                Location loc = getStart().clone().add(getLocationAtIndex(w, h, l, getStart().getWorld(), resetIndex));
+                Location loc = getStart().clone().add(Arena.getLocationAtIndex(w, h, l, getStart().getWorld(), resetIndex));
                 loc.getBlock().setBlockData(block);
 
                 resetIndex++;
@@ -62,8 +62,8 @@ public class Section {
         }
 
         resetIndex = -1;
-        resetTypeIndex = -1;
-        resetAmountIndex = -1;
+        resetTypeIndex = 0;
+        resetAmountIndex = 0;
 
         dirty = false;
         return true;
@@ -100,14 +100,6 @@ public class Section {
      */
     public int getLength() {
         return getEnd().getBlockZ() - getStart().getBlockZ() + 1;
-    }
-
-    public static Location getLocationAtIndex(int width, int height, int length, World world, int index) {
-        int x = (index / height) % width;
-        int y = index % height;
-        int z = index / (height * width);
-
-        return new Location(world, x, y, z);
     }
 
     public Location getStart() {

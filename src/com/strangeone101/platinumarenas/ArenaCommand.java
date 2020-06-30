@@ -1,9 +1,14 @@
 package com.strangeone101.platinumarenas;
 
+import com.strangeone101.platinumarenas.commands.BorderCommand;
 import com.strangeone101.platinumarenas.commands.CreateCommand;
+import com.strangeone101.platinumarenas.commands.ListCommand;
+import com.strangeone101.platinumarenas.commands.ResetCommand;
 import org.bukkit.ChatColor;
+import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,8 +83,23 @@ public abstract class ArenaCommand {
         return exe;
     }
 
+    static TabCompleter getTabCompleter() {
+        final TabCompleter completer = (sender, cmd, label, args) -> {
+            if (args.length > 0) {
+                if (subcommands.containsKey(args[0].toLowerCase())) {
+                    return subcommands.get(args[0].toLowerCase()).getTabCompletion(sender, Arrays.asList(Arrays.copyOfRange(args, 1, args.length)));
+                }
+            }
+            return new ArrayList<>();
+        };
+        return completer;
+    }
+
     public static void createCommands() {
         subcommands.clear();
         subcommands.put("create", new CreateCommand());
+        subcommands.put("reset", new ResetCommand());
+        subcommands.put("list", new ListCommand());
+        subcommands.put("border", new BorderCommand());
     }
 }

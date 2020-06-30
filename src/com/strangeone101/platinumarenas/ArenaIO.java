@@ -279,4 +279,8 @@ public class ArenaIO {
 
         return null;  //unfinished
     }
+
+    public static void loadArenasAsync() {
+
+    }
 }

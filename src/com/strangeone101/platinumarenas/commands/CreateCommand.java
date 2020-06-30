@@ -24,16 +24,25 @@ public class CreateCommand extends ArenaCommand {
             return;
         }
 
+        if (!sender.hasPermission("platinumarenas.create")) {
+            sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " You don't have permission to run this command!");
+            return;
+        }
 
         if (args.size() == 0) {
             if (RegionSelection.hasSelectedRegion((Player)sender)) {
                 sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " You've already selected a region. Finish the arena creation with /arena create [name]");
             } else {
-                sender.sendMessage(PlatinumArenas.PREFIX + " Create an arena by selecting a region with a WOODEN_AXE and then run /arena create [name]");
+                sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " Create an arena by selecting a region with a WOODEN_AXE and then run /arena create [name]");
             }
         } else {
+            if (Arena.arenas.containsKey(args.get(0).toLowerCase())) {
+                sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " An arena by that name already exists!");
+                return;
+            }
+
             if (!RegionSelection.hasSelectedRegion((Player)sender)) {
-                sender.sendMessage(PlatinumArenas.PREFIX + " Create an arena by selecting a region with a WOODEN_AXE and then run /arena create [name]");
+                sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " Create an arena by selecting a region with a WOODEN_AXE and then run /arena create [name]");
                 return;
             }
 
@@ -43,7 +52,7 @@ public class CreateCommand extends ArenaCommand {
             }
 
             Block[] corners = RegionSelection.getRegionCorners((Player)sender);
-            Arena.createNewArena(args.get(0), corners[0].getLocation(), corners[1].getLocation(), (Player)sender);
+            Arena.createNewArena(args.get(0).toLowerCase(), corners[0].getLocation(), corners[1].getLocation(), (Player)sender);
 
         }
     }

@@ -138,12 +138,12 @@ public class Arena {
         //PlatinumArenas.INSTANCE.getLogger().info("Key took " + (System.currentTimeMillis() - time) + "ms");
     }
 
-    public void reset() {
+    public void reset(int resetSpeed) {
         if (getSections().size() == 0) return;
 
         List<Section> sectionsClone = Lists.newArrayList(getSections());
 
-        int perTickEachSection = ConfigManager.BLOCKS_RESET_PER_SECOND / getSections().size();
+        int perTickEachSection = resetSpeed / getSections().size();
 
         loopyReset(sectionsClone, perTickEachSection);
     }
@@ -236,7 +236,7 @@ public class Arena {
                 int zStart = (int)(Math.ceil(length / sectionsZ) * zx);
 
                 int xEnd = (int)(Math.ceil(width / sectionsX) * (sx + 1)) - 1;
-                int zEnd = (int)(Math.ceil(length / sectionsZ) * (sx + 1)) - 1;
+                int zEnd = (int)(Math.ceil(length / sectionsZ) * (zx + 1)) - 1;
 
                 Location start = corner1.clone().add(xStart, 0, zStart);
                 Location end = corner1.clone().add(xEnd, height - 1, zEnd);
@@ -250,6 +250,7 @@ public class Arena {
         }
 
         String totalSize = NumberFormat.getInstance().format(width * length * height);
+        PlatinumArenas.INSTANCE.getLogger().info("Creating new arena. Size is " + width + " x " + height + " x " + length + "and totals " + totalSize + " blocks.");
 
         player.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Arena size is " + ChatColor.YELLOW + width + " x " + height + " x " + length + " " + ChatColor.GREEN + " and totals " + ChatColor.YELLOW + totalSize + " blocks.");
         if (sectionsX * sectionsZ > 1) player.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " " + (sectionsX * sectionsZ) + " sections will be created.");
@@ -277,10 +278,15 @@ public class Arena {
                 arena.getSections().addAll(data.sections);
 
                 String tookS = took < 1000 ? took + "ms" : (took > 1000 * 120 ? took / 60000 + "m" : took / 1000 + "s");
-                player.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Done analying! Took " + tookS + " over " + data.tick + " ticks.");
-                player.sendMessage(PlatinumArenas.PREFIX + ChatColor.YELLOW + " Saving to disk...");
-                ArenaIO.saveArena(new File(PlatinumArenas.INSTANCE.getDataFolder(), "/arenas/" + name + ".dat"), arena);
-                player.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Done! The arena is now ready for use!");
+                if (player != null && player.isOnline()) {
+                    player.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Done analying! Took " + tookS + " over " + data.tick + " ticks.");
+                    player.sendMessage(PlatinumArenas.PREFIX + ChatColor.YELLOW + " Saving to disk...");
+                    player.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Done! The arena is now ready for use!");
+                }
+                Arena.arenas.put(arena.name, arena);
+
+                ArenaIO.saveArena(new File(PlatinumArenas.INSTANCE.getDataFolder(), "/Arenas/" + name + ".dat"), arena);
+                PlatinumArenas.INSTANCE.getLogger().info("Arena created in " + tookS + " over " + data.tick + " ticks.");
             }
         };
 
@@ -307,7 +313,16 @@ public class Arena {
         List<BlockData> keyList =  new ArrayList<BlockData>(Arrays.asList(data.arena.keys));
 
         for (int i = 0; i < amount; i++) {
-            Location loc = Arena.getLocationAtIndex(width, height, length, data.arena.corner1.getWorld(), data.index);
+            Location loc;
+            try {
+                loc = Arena.getLocationAtIndex(width, height, length, data.arena.corner1.getWorld(), data.index);
+            } catch (ArithmeticException e) {
+                e.printStackTrace();
+                PlatinumArenas.INSTANCE.getLogger().info("Debug for error: " + width + " x " + height + " x " + length);
+                PlatinumArenas.INSTANCE.getLogger().info("Debug for error2: " +start + " | " + end + " || " + data.arena.getCorner1() + " | " + data.arena.getCorner2());
+                return;
+            }
+
             loc = start.clone().add(loc);
             if (data.index >= width * height * length) {
                 //PlatinumArenas.INSTANCE.getLogger().info("Debug3: We are at the end");
@@ -371,11 +386,13 @@ public class Arena {
 
             if (System.currentTimeMillis() - data.lastUpdate > 10 * 1000) {
                 double perc = ((double)data.totalBlocks / (double)data.maxBlocks);
-                //PlatinumArenas.INSTANCE.getLogger().info("Debug7: " + perc + " | " + data.maxBlocks + " | " + data.totalBlocks + " | " + ((double)data.totalBlocks / ((double)data.maxBlocks)));
                 NumberFormat format = NumberFormat.getPercentInstance();
                 format.setMinimumFractionDigits(2);
                 String percS = format.format(perc);
-                player.sendMessage(ChatColor.GREEN + "Arena " + percS + " analyzed (" + NumberFormat.getInstance().format(data.totalBlocks) + " blocks)");
+                if (player != null && player.isOnline()) {
+                    player.sendMessage(ChatColor.GREEN + "Arena " + percS + " analyzed (" + NumberFormat.getInstance().format(data.totalBlocks) + " blocks)");
+                }
+                PlatinumArenas.INSTANCE.getLogger().info("Arena " + percS + " analyzed (" + NumberFormat.getInstance().format(data.totalBlocks) + " blocks)");
                 data.lastUpdate = System.currentTimeMillis();
             }
         }
@@ -443,9 +460,9 @@ public class Arena {
     }
 
     public static Location getLocationAtIndex(int width, int height, int length, World world, int index) {
-        int x = (index / height) % width;
-        int y = index % height;
-        int z = index / (height * width);
+        int x = index % width;
+        int y = index / (length * width);
+        int z = (index / width) % length;
 
         return new Location(world, x, y, z);
     }
