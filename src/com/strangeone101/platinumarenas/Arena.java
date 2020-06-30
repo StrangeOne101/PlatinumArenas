@@ -281,11 +281,14 @@ public class Arena {
                 if (player != null && player.isOnline()) {
                     player.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Done analying! Took " + tookS + " over " + data.tick + " ticks.");
                     player.sendMessage(PlatinumArenas.PREFIX + ChatColor.YELLOW + " Saving to disk...");
+                }
+
+                Arena.arenas.put(arena.name, arena);
+                ArenaIO.saveArena(new File(PlatinumArenas.INSTANCE.getDataFolder(), "/Arenas/" + name + ".dat"), arena);
+
+                if (player != null && player.isOnline()) {
                     player.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Done! The arena is now ready for use!");
                 }
-                Arena.arenas.put(arena.name, arena);
-
-                ArenaIO.saveArena(new File(PlatinumArenas.INSTANCE.getDataFolder(), "/Arenas/" + name + ".dat"), arena);
                 PlatinumArenas.INSTANCE.getLogger().info("Arena created in " + tookS + " over " + data.tick + " ticks.");
             }
         };

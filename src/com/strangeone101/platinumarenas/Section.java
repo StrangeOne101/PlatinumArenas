@@ -6,14 +6,26 @@ import org.bukkit.block.data.BlockData;
 
 public class Section {
 
-    private Arena parent;
-    private Location start;
-    private Location end;
-    private short[] blockTypes;
-    private short[] blockAmounts;
+    private Arena parent;         //The arena housing this section
+    private Location start;       //Corner 1
+    private Location end;         //Corner 2
+    private short[] blockTypes;   //An array of shorts (that are block key indexes)
+    private short[] blockAmounts; //An array of how many of that block there are in a line.
 
+    /**
+     * The total block index of where the reset is up to. This variable is set
+     * back to 0 after the reset pauses (this allows us to reset the arena over
+     * time instead of in a single tick).
+     */
     private int resetIndex = -1;
+    /**
+     * The index of where the reset is currently up to in the blockTypes variable
+     */
     private int resetTypeIndex = 0;
+    /**
+     * The block number the reset is currently on in the blockAmounts variable. Will be between 0 and
+     * blockAmounts[resetTypeIndex] (short)
+     */
     private int resetAmountIndex = 0;
 
     private boolean dirty;
@@ -37,7 +49,11 @@ public class Section {
     }
 
     /**
-     * Resets the section.
+     * Resets the section. This will continue off where it last left off, will iterate
+     * over the provided amount of blocks before halting again. This allows us to
+     * reset the section/arena over multiple ticks to prevent large lag spikes -
+     * especially for large arenas.
+     *
      * @param amount How many blocks to reset before pausing
      * @return If the section is finished resetting.
      */
@@ -69,6 +85,13 @@ public class Section {
         return true;
     }
 
+    /**
+     * Resets the section. This will continue off where it last left off, and
+     * will not stop until the entire section is reset. This may cause a lot
+     * of lag. Use `reset(amount)` instead.
+     *
+     * @return If the section is finished resetting.
+     */
     public boolean reset() {
         return reset(-1);
     }
@@ -77,6 +100,9 @@ public class Section {
         this.dirty = dirty;
     }
 
+    /**
+     * @return If the section has been modified by players
+     */
     public boolean isDirty() {
         return dirty;
     }

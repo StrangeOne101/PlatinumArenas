@@ -33,13 +33,19 @@ public class ArenaIO {
 
     private static final int FILE_VERSION = 1;
 
-
+    /**
+     * Saves an arena to disk.
+     * @param file The File to save to
+     * @param arena The arena to save
+     * @param callback Any callback functions you want to run after this
+     *                 completes (this doesn't run async so why did I do this?)
+     * @return True if the arena saved.
+     */
     public static boolean saveArena(File file, final Arena arena, Runnable... callback) {
         Location corner1 = arena.getCorner1();
         Location corner2 = arena.getCorner2();
 
         if (corner1.getWorld() != corner2.getWorld()) return false;
-
 
         try {
             FileOutputStream stream = new FileOutputStream(file);
@@ -54,7 +60,7 @@ public class ArenaIO {
 
             //BLOCKDATA KEY SECTION
 
-            byte[] keyBytes = new byte[0];
+            byte[] keyBytes = new byte[0]; //A byte array to store all the blocklist keys. They are separated by the KEY_SPLIT char
 
             for (BlockData data : arena.getKeys()) {
                 String s = data.getAsString(true); //Convert BlockData into string
@@ -70,14 +76,15 @@ public class ArenaIO {
 
             short sections = (short) arena.getSections().size(); //Amount of sections
 
-            ByteBuffer sb = ByteBuffer.allocate(2);
-            sb.putShort(sections);
+            ByteBuffer sb = ByteBuffer.allocate(2); //Allows us to convert other primitives to bytes easily
+            sb.putShort(sections); //Put a single short at the start that is the amount of sections. Means the max number of sections is 32k
 
             byteStream.write(sb.array()); //Write to array
 
             for (int s = 0; s < arena.getSections().size(); s++) {
                 Section section = arena.getSections().get(s);
 
+                //7 ints (2x XYZ coords + size of the block types) + block types and amounts in bytes (2 shorts = 4 bytes))
                 ByteBuffer ib = ByteBuffer.allocate((7 * 4) + (section.getBlockAmounts().length * 4));
 
                 ib.putInt(section.getStart().getBlockX());
@@ -134,6 +141,7 @@ public class ArenaIO {
 
             byte[] blockBytes = byteStream.toByteArray();
 
+            //Combine all the different sections together into a single byte array to write to file
             byte[] totalBytes = new byte[0];
             totalBytes = ArrayUtils.addAll(totalBytes, headerBytes);
             totalBytes = ArrayUtils.add(totalBytes, SECTION_SPLIT);
@@ -154,6 +162,11 @@ public class ArenaIO {
         return true;
     }
 
+    /**
+     * Loads an Arena object from the provided file
+     * @param file The arena file to load
+     * @return New Arena object
+     */
     public static Arena loadArena(File file) {
         try {
 
