@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.strangeone101</groupId>
     <artifactId>PlatinumArenas</artifactId>
-    <version>0.1</version>
+    <version>0.2</version>
     <repositories>
         <repository>
             <id>bungeecord-repo</id>
@@ -101,12 +101,6 @@
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
             <version>1.15.2-R0.1-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.projectkorra</groupId>
-            <artifactId>projectkorra</artifactId>
-            <version>1.8.9</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

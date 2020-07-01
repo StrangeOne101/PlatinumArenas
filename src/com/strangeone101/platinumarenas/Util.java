@@ -9,6 +9,7 @@ import java.util.List;
 public class Util {
 
     public static boolean isMatch(byte[] pattern, byte[] input, int pos) {
+        if (pos + (pattern.length - 1) > input.length) return false;
         for(int i=0; i< pattern.length; i++) {
             if(pattern[i] != input[pos+i]) {
                 return false;
@@ -62,5 +63,14 @@ public class Util {
         }
 
         return false;
+    }
+
+    public static boolean isInteger(String s) {
+        try {
+            Integer.parseInt(s);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 }

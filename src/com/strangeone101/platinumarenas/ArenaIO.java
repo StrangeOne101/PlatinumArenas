@@ -104,8 +104,8 @@ public class ArenaIO {
 
                 byteStream.write(ib.array());
 
-                if (s < arena.getSections().size()) { //If there is more sections to go, put the splitter
-                    byteStream.write(new byte[] {0x00, ARENASECTION_SPLIT});
+                if (s < arena.getSections().size() - 1) { //If there is more sections to go, put the splitter
+                    byteStream.write(new byte[] {0x00, 0x00, 0x00, ARENASECTION_SPLIT});
                 }
 
             }
@@ -190,7 +190,7 @@ public class ArenaIO {
             }
             if (version >= 1) {
                 name = headerString.split(",")[1];
-                String world = name = headerString.split(",")[2];
+                String world = headerString.split(",")[2];
                 int x1 = Integer.parseInt(headerString.split(",")[3]);
                 int y1 = Integer.parseInt(headerString.split(",")[4]);
                 int z1 = Integer.parseInt(headerString.split(",")[5]);
@@ -204,37 +204,88 @@ public class ArenaIO {
 
             //KEY SECTION
             int keySectionSplit = ArrayUtils.indexOf(readBytes, SECTION_SPLIT, firstSectionSplit + 1);
-            byte[] keyBytes = Arrays.copyOfRange(readBytes, firstSectionSplit, keySectionSplit);
-
+            byte[] keyBytes = Arrays.copyOfRange(readBytes, firstSectionSplit + 1, keySectionSplit);
+            PlatinumArenas.INSTANCE.getLogger().info("Keybyte size = " + keyBytes.length);
             String currentKey = "";
+
+
             List<BlockData> blockDataSet = new ArrayList<>();
 
-            for (int i = 0; i < keyBytes.length; i++) {
+            /*for (int i = 0; i < keyBytes.length; i++) {
                 byte currByte = keyBytes[i];
 
                 if (currByte == KEY_SPLIT || i == keyBytes.length - 1) {
                     blockDataSet.add(Bukkit.createBlockData(currentKey));
                     currentKey = "";
                 }
+
+
+
+                //TODO currentKey is not actually set with the new currByte
+            }*/
+
+            for (byte[] key : Util.split(new byte[] {KEY_SPLIT}, keyBytes)) {
+                String blockData = new String(key, StandardCharsets.US_ASCII);
+                PlatinumArenas.INSTANCE.getLogger().info("Loaded block key: " + blockData);
+                BlockData data = Bukkit.createBlockData(blockData);
+                blockDataSet.add(data);
             }
 
             Arena arena = new Arena(name, corner1, corner2);
             arena.setCreator(owner);
+            arena.addKeys(blockDataSet);
 
             //BLOCK SECTION
-            int blockSectionSplit = ArrayUtils.indexOf(readBytes, SECTION_SPLIT, keySectionSplit + 1);
-            byte[] blockBytes = Arrays.copyOfRange(readBytes, keySectionSplit, blockSectionSplit);
+            //int blockSectionSplit = ArrayUtils.indexOf(readBytes, SECTION_SPLIT, keySectionSplit + 1);
+            byte[] blockBytes = Arrays.copyOfRange(readBytes, keySectionSplit + 1, readBytes.length);
 
             ByteBuffer bb = ByteBuffer.allocate(2);
             bb.put(blockBytes[0]);
             bb.put(blockBytes[1]);
             short sectionCount = bb.getShort(0);
+            short currentSection = 0;
 
-            byte[] arenaSectionSplit = {0x00, ARENASECTION_SPLIT};
+            byte[] arenaSectionSplit = {0x00, 0x00, 0x00, ARENASECTION_SPLIT};
 
             blockBytes = Arrays.copyOfRange(blockBytes, 2, blockBytes.length); //Cut the 2 bytes off at the front
+            PlatinumArenas.INSTANCE.getLogger().info(blockBytes.length + " bytes in blockBytes");
 
-            List<byte[]> bytesForSections = Util.split(arenaSectionSplit, blockBytes);
+            ByteBuffer buffer = ByteBuffer.allocate(blockBytes.length);
+            buffer.put(blockBytes);
+            buffer.position(0);
+
+            while (currentSection < sectionCount) {
+                int x1 = buffer.getInt();
+                int y1 = buffer.getInt();
+                int z1 = buffer.getInt();
+                int x2 = buffer.getInt();
+                int y2 = buffer.getInt();
+                int z2 = buffer.getInt();
+                Location start = new Location(corner1.getWorld(), x1, y1, z1);
+                Location end = new Location(corner1.getWorld(), x2, y2, z2);
+                int left = buffer.getInt();
+
+                short[] amounts = new short[left / 2];
+                short[] types = new short[left / 2];
+
+                for (int i = 0; i < left / 2; i++) {
+                    amounts[i] = buffer.getShort();
+                    types[i] = buffer.getShort();
+                }
+
+                Section section = new Section(arena, start, end, types, amounts);
+                arena.getSections().add(section);
+                currentSection++;
+
+                if (currentSection != sectionCount) {
+                    buffer.getInt(); //Skip the arena section split
+                }
+
+
+            }
+
+            /*List<byte[]> bytesForSections = Util.split(arenaSectionSplit, blockBytes);
+            PlatinumArenas.INSTANCE.getLogger().info(bytesForSections.size() + " sections in arena.");
 
             for (byte[] sectionBytes : bytesForSections) {
                 ByteBuffer buffer = ByteBuffer.allocate(sectionBytes.length);
@@ -251,7 +302,7 @@ public class ArenaIO {
                 Location end = new Location(corner1.getWorld(), x2, y2, z2);
 
                 int left = buffer.getInt();
-
+                PlatinumArenas.INSTANCE.getLogger().info(left + " shortsets in this section");
                 short[] amounts = new short[left / 2];
                 short[] types = new short[left / 2];
                 int i = 0;
@@ -263,7 +314,7 @@ public class ArenaIO {
 
                 Section section = new Section(arena, start, end, types, amounts);
                 arena.getSections().add(section);
-            }
+            }*/
 
 
             /*ShortBuffer sb = ShortBuffer.allocate(blockBytes.length / 2);
@@ -282,7 +333,7 @@ public class ArenaIO {
 
             //arena.merge((BlockData[]) blockDataSet.toArray(), blockList.stream().map((Short) i->(short)i).toArray());
 
-
+            return arena;
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -311,6 +362,7 @@ public class ArenaIO {
             if (f.getName().endsWith(".dat")) {
                 try {
                     Arena arena = ArenaIO.loadArena(f);
+                    PlatinumArenas.INSTANCE.getLogger().info("Loaded " + arena.getName() + " from file " + f.getName());
                     Arena.arenas.put(arena.getName(), arena);
                 } catch (Exception e) {
                     PlatinumArenas.INSTANCE.getLogger().warning("Failed to load arena file \"" + f.getName() + "\"!");
@@ -320,7 +372,7 @@ public class ArenaIO {
         }
         long took = System.currentTimeMillis() - time;
 
-        PlatinumArenas.INSTANCE.getLogger().info("Loaded " + Arena.arenas.size() + " in " + took + "ms!");
+        PlatinumArenas.INSTANCE.getLogger().info("Loaded " + Arena.arenas.size() + " arenas in " + took + "ms!");
 
         return Arena.arenas.values();
     }

@@ -240,11 +240,14 @@ public class Arena {
         for (int sx = 0; sx < sectionsX; sx++) {
             for (int zx = 0; zx < sectionsZ; zx++) {
 
-                int xStart = (int)(Math.ceil(width / sectionsX) * sx);
-                int zStart = (int)(Math.ceil(length / sectionsZ) * zx);
+                int xStart = (int)(Math.floor(width / sectionsX) * sx);
+                int zStart = (int)(Math.floor(length / sectionsZ) * zx);
 
-                int xEnd = (int)(Math.ceil(width / sectionsX) * (sx + 1)) - 1;
-                int zEnd = (int)(Math.ceil(length / sectionsZ) * (zx + 1)) - 1;
+                int xEnd = (int)(Math.floor(width / sectionsX) * (sx + 1)) - 1;
+                int zEnd = (int)(Math.floor(length / sectionsZ) * (zx + 1)) - 1;
+
+                if (sx == sectionsX - 1) xEnd = width - 1;
+                if (zx == sectionsZ - 1) zEnd = length - 1;
 
                 Location start = corner1.clone().add(xStart, 0, zStart);
                 Location end = corner1.clone().add(xEnd, height - 1, zEnd);
