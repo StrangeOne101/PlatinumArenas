@@ -12,7 +12,7 @@ commands:
       aliases: [pta, arena, arenas]
       permission: platinumarenas.command
 permissions:
-   platinumarenas.command:
+   platinumarenas:
       default: op
       children:
          platinumarenas.reload: true
@@ -21,4 +21,4 @@ permissions:
          platinumarenas.reset: true
          platinumarenas.cancel: true
          platinumarenas.border: true
-         platinumarenas.delete: true
+         platinumarenas.remove: true
