@@ -55,7 +55,7 @@ public class ArenaIO {
             byte split = ',';
 
             //HEADER SECTION
-            String header = FILE_VERSION + "," + arena.getName() + "," + l.getWorld() + "," + l.getBlockX() + "," + l.getBlockY() + "," + l.getBlockZ() + "," +
+            String header = FILE_VERSION + "," + arena.getName() + "," + l.getWorld().getName() + "," + l.getBlockX() + "," + l.getBlockY() + "," + l.getBlockZ() + "," +
                     l2.getBlockX() + "," + l2.getBlockY() + "," + l2.getBlockZ();
             byte[] headerBytes = header.getBytes(StandardCharsets.US_ASCII);
 
