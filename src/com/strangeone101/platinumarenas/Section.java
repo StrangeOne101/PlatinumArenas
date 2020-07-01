@@ -55,7 +55,7 @@ public class Section {
      * especially for large arenas.
      *
      * @param amount How many blocks to reset before pausing
-     * @return If the section is finished resetting.
+     * @return True if the section is finished resetting, or false if it has more to do later
      */
     public boolean reset(int amount) {
         int w = getWidth();

@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -293,7 +294,34 @@ public class ArenaIO {
         return null;  //unfinished
     }
 
-    public static void loadArenasAsync() {
+    /**
+     * Unloads the current arenas and loads them all from file again.
+     * @return The list of arenas
+     */
+    public static Collection<Arena> loadAllArenas() {
+        File folder = new File(PlatinumArenas.INSTANCE.getDataFolder(), "/Arenas");
+        if (!folder.exists()) {
+            folder.mkdirs();
+        }
 
+        Arena.arenas.clear();
+        long time = System.currentTimeMillis();
+
+        for (File f : folder.listFiles()) {
+            if (f.getName().endsWith(".dat")) {
+                try {
+                    Arena arena = ArenaIO.loadArena(f);
+                    Arena.arenas.put(arena.getName(), arena);
+                } catch (Exception e) {
+                    PlatinumArenas.INSTANCE.getLogger().warning("Failed to load arena file \"" + f.getName() + "\"!");
+                    e.printStackTrace();
+                }
+            }
+        }
+        long took = System.currentTimeMillis() - time;
+
+        PlatinumArenas.INSTANCE.getLogger().info("Loaded " + Arena.arenas.size() + " in " + took + "ms!");
+
+        return Arena.arenas.values();
     }
 }

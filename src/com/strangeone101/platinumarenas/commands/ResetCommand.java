@@ -46,9 +46,7 @@ public class ResetCommand extends ArenaCommand {
     }
 
 
-
     public enum ResetSpeed {
-
 
         VERY_SLOW(ConfigManager.BLOCKS_RESET_PER_SECOND_VERYSLOW, "veryslow"),
         SLOW(ConfigManager.BLOCKS_RESET_PER_SECOND_SLOW),

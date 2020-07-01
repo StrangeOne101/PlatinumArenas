@@ -2,9 +2,12 @@ package com.strangeone101.platinumarenas;
 
 import org.bukkit.ChatColor;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.File;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 
 public class PlatinumArenas extends JavaPlugin {
 
@@ -20,6 +23,9 @@ public class PlatinumArenas extends JavaPlugin {
 
         getLogger().info("PlatinumArenas Enabled!");
         getLogger().info("Loading arenas... this will be done async.");
+        async(ArenaIO::loadAllArenas);
+
+
 
         ArenaCommand.createCommands();
         getCommand("platinumarenas").setExecutor(ArenaCommand.getCommandExecutor());
@@ -30,5 +36,23 @@ public class PlatinumArenas extends JavaPlugin {
             folder.mkdirs();
         }
 
+
+    }
+
+    /**
+     * Call method async
+     * @param callable Method
+     */
+    public static void async(Callable<?> callable) {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                try {
+                    callable.call();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }.runTaskAsynchronously(PlatinumArenas.INSTANCE);
     }
 }

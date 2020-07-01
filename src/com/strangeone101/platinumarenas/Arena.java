@@ -171,6 +171,14 @@ public class Arena {
         }.runTaskLater(PlatinumArenas.INSTANCE, 1L);
     }
 
+    /**
+     * Create a new arena
+     * @param name Arena name
+     * @param corner1 One corner of the region
+     * @param corner2 Other corner of the region
+     * @param player The creator
+     * @return The arena object
+     */
     public static Arena createNewArena(String name, Location corner1, Location corner2, Player player) {
 
         int x1 = corner1.getBlockX();
@@ -298,6 +306,10 @@ public class Arena {
         return arena;
     }
 
+    /**
+     * Small class that contains all the data we need to carry over between ticks
+     * when resetting an arena.
+     */
     private static class CreationLoopinData {
         List<Section> sections;
         List<Location> sectionStarts, sectionEnds;
@@ -307,6 +319,13 @@ public class Arena {
         short[] blockAmounts, blockTypes = new short[0];
     }
 
+    /**
+     * Create an arena with recursion and delays to stop serious lag.
+     * @param data The data of the arena being built
+     * @param amount The amount of blocks to check in this tick
+     * @param player The player creating the arena
+     * @param onFinished Runnables to run after this is done
+     */
     private static void loopyCreate(CreationLoopinData data, final int amount, Player player, Runnable onFinished) {
         Location start = data.sectionStarts.get(0);
         Location end = data.sectionEnds.get(0);
@@ -462,6 +481,15 @@ public class Arena {
         return corner2.getBlockZ() - corner1.getBlockZ() + 1;
     }
 
+    /**
+     * Returns a relative location object for where the provided index is in the arena. Quick math!
+     * @param width Width
+     * @param height Height
+     * @param length Length
+     * @param world World
+     * @param index Arena index
+     * @return
+     */
     public static Location getLocationAtIndex(int width, int height, int length, World world, int index) {
         int x = index % width;
         int y = index / (length * width);
