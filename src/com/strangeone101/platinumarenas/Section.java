@@ -1,7 +1,7 @@
 package com.strangeone101.platinumarenas;
 
 import org.bukkit.Location;
-import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 
 public class Section {
@@ -27,6 +27,10 @@ public class Section {
      * blockAmounts[resetTypeIndex] (short)
      */
     private int resetAmountIndex = 0;
+
+    private int index;
+    private int locationIndex;
+    private int positionIndex;
 
     private boolean dirty;
 
@@ -54,30 +58,82 @@ public class Section {
      * reset the section/arena over multiple ticks to prevent large lag spikes -
      * especially for large arenas.
      *
-     * @param amount How many blocks to reset before pausing
+     * @param max How many blocks to reset before pausing
      * @return True if the section is finished resetting, or false if it has more to do later
      */
-    public boolean reset(int amount) {
+    public boolean reset(int max) {
         int w = getWidth();
         int h = getHeight();
         int l = getLength();
-        for (resetTypeIndex = resetTypeIndex; resetTypeIndex < blockTypes.length; resetTypeIndex++) {
-            for (resetAmountIndex = resetAmountIndex; resetAmountIndex < blockAmounts[resetAmountIndex]; resetAmountIndex++) {
 
-                BlockData block = parent.getKeys()[blockTypes[resetTypeIndex]];
-                Location loc = getStart().clone().add(Arena.getLocationAtIndex(w, h, l, getStart().getWorld(), resetIndex));
-                loc.getBlock().setBlockData(block);
+        // resetIndex should remain at 0, and only be reset when the entire section is complete
+        // This way we can continue iterating from where we left off
+        if (index < 0)
+        {
+            index = 0;
+        }
 
-                resetIndex++;
+        if (locationIndex < 0)
+        {
+            locationIndex = 0;
+        }
 
-                if (amount > 0 && resetIndex > amount) {
-                    resetIndex = 0;
+        int count = 0;
+
+        while (index < blockTypes.length)
+        {
+            short type = this.blockTypes[this.index];
+            short amount = this.blockAmounts[this.index];
+
+            BlockData data = this.parent.getKeys()[type];
+
+            while (positionIndex < amount)
+            {
+                Location offset = Arena.getLocationAtIndex(w, h, l, getStart().getWorld(), locationIndex++);
+
+                Block block = getStart().add(offset).getBlock();
+                getStart().subtract(offset);
+
+                block.setBlockData(data);
+
+                count++;
+                positionIndex++;
+
+                if (max > 0 && count > max)
+                {
                     return false;
                 }
             }
+
+            positionIndex = 0;
+            index++;
         }
 
-        resetIndex = -1;
+        index = 0;
+        locationIndex = 0;
+        positionIndex = 0;
+
+//        for (resetTypeIndex = resetTypeIndex; resetTypeIndex < blockTypes.length; resetTypeIndex++) {
+//            for (resetAmountIndex = resetAmountIndex; resetAmountIndex < blockAmounts[resetAmountIndex]; resetAmountIndex++) {
+//
+//                BlockData block = parent.getKeys()[blockTypes[resetTypeIndex]];
+//                Location loc = getStart().clone().add(Arena.getLocationAtIndex(w, h, l, getStart().getWorld(), resetIndex));
+//
+//                System.out.println("resetTypeIndex: " + resetAmountIndex + ", resetAmountIndex: " + resetAmountIndex + ", resetIndex: " + resetIndex + ", amount: " + amount);
+//                System.out.println("Updating " + loc + " to " + block.getMaterial());
+//
+//                loc.getBlock().setBlockData(block);
+//
+//                resetIndex++;
+//
+//                if (amount > 0 && resetIndex > amount) {
+//                    resetIndex = 0;
+//                    return false;
+//                }
+//            }
+//        }
+
+        resetIndex = 0;
         resetTypeIndex = 0;
         resetAmountIndex = 0;
 
@@ -142,5 +198,11 @@ public class Section {
 
     protected short[] getBlockTypes() {
         return blockTypes;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Section{" + "start=" + start + ", end=" + end + '}';
     }
 }
