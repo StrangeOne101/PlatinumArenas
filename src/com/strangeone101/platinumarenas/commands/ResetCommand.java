@@ -6,6 +6,7 @@ import com.strangeone101.platinumarenas.ConfigManager;
 import com.strangeone101.platinumarenas.PlatinumArenas;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +36,11 @@ public class ResetCommand extends ArenaCommand {
             return;
         }
 
+        if (Arena.arenas.get(args.get(0).toLowerCase()).isBeingReset()) {
+            sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " That arena is currently being reset!");
+            return;
+        }
+
         ResetSpeed speed = ResetSpeed.NORMAL;
         if (args.size() >= 2) {
             speed = ResetSpeed.getSpeed(args.get(1));
@@ -42,7 +48,10 @@ public class ResetCommand extends ArenaCommand {
 
         Arena arena = Arena.arenas.get(args.get(0).toLowerCase());
         sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Resetting arena \"" + arena.getName() + "\"!");
-        arena.reset(speed.getAmount() / 20);
+        arena.reset(speed.getAmount() / 20, () -> {
+            if (sender != null && (!(sender instanceof Player) || ((Player)sender).isOnline()))
+            sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Arena \"" + arena.getName() + "\" reset complete!");
+        });
     }
 
 

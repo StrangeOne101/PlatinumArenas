@@ -1,7 +1,10 @@
 package com.strangeone101.platinumarenas;
 
 import com.strangeone101.platinumarenas.commands.BorderCommand;
+import com.strangeone101.platinumarenas.commands.CancelCommand;
+import com.strangeone101.platinumarenas.commands.ConfirmCommand;
 import com.strangeone101.platinumarenas.commands.CreateCommand;
+import com.strangeone101.platinumarenas.commands.DeleteCommand;
 import com.strangeone101.platinumarenas.commands.ListCommand;
 import com.strangeone101.platinumarenas.commands.ResetCommand;
 import org.bukkit.ChatColor;
@@ -24,6 +27,7 @@ public abstract class ArenaCommand {
     private String command = "arena";
     private String description = "Manage PlatinumArenas!";
     private String usage = "/arena help for a list of commands";
+    private String[] aliases = new String[0];
 
     public ArenaCommand(String command, String description, String usage, String[] aliases) {
         this.command = command;
@@ -31,9 +35,6 @@ public abstract class ArenaCommand {
         this.usage = usage;
 
         subcommands.put(command.toLowerCase(), this);
-        for (String cmd : aliases) {
-            subcommands.put(cmd.toLowerCase(), this);
-        }
     }
 
     public abstract void execute(CommandSender sender, List<String> args);
@@ -50,6 +51,14 @@ public abstract class ArenaCommand {
         return usage;
     }
 
+    public String[] getAliases() {
+        return aliases;
+    }
+
+    public boolean isHidden() {
+        return false;
+    }
+
     /** Gets a list of valid arguments that can be used in tabbing. */
     protected List<String> getTabCompletion(final CommandSender sender, final List<String> args) {
         return new ArrayList<String>();
@@ -64,6 +73,8 @@ public abstract class ArenaCommand {
         sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.YELLOW + " List of subcommands:");
 
         for (String s : list) {
+            if (subcommands.get(s).isHidden()) continue;
+
             sender.sendMessage(ChatColor.YELLOW + "/arena " + s + " - " + subcommands.get(s).description);
         }
 
@@ -72,9 +83,11 @@ public abstract class ArenaCommand {
     static CommandExecutor getCommandExecutor() {
         final CommandExecutor exe = (sender, cmd, label, args) -> {
             if (args.length > 0) {
-                if (subcommands.containsKey(args[0].toLowerCase())) {
-                    subcommands.get(args[0].toLowerCase()).execute(sender, Arrays.asList(Arrays.copyOfRange(args, 1, args.length)));
-                    return true;
+                for (String s : subcommands.keySet()) {
+                    if (args[0].equalsIgnoreCase(s) || Arrays.asList(subcommands.get(s).getAliases()).contains(args[0].toLowerCase())) {
+                        subcommands.get(s).execute(sender, Arrays.asList(Arrays.copyOfRange(args, 1, args.length)));
+                        return true;
+                    }
                 }
             }
             help(sender);
@@ -101,5 +114,8 @@ public abstract class ArenaCommand {
         subcommands.put("reset", new ResetCommand());
         subcommands.put("list", new ListCommand());
         subcommands.put("border", new BorderCommand());
+        subcommands.put("remove", new DeleteCommand());
+        subcommands.put("confirm", new ConfirmCommand());
+        subcommands.put("cancel", new CancelCommand());
     }
 }

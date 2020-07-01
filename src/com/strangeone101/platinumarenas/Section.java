@@ -94,7 +94,7 @@ public class Section {
                 Block block = getStart().add(offset).getBlock();
                 getStart().subtract(offset);
 
-                block.setBlockData(data);
+                block.setBlockData(data, false);
 
                 count++;
                 positionIndex++;

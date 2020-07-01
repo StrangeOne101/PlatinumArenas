@@ -205,7 +205,7 @@ public class ArenaIO {
             //KEY SECTION
             int keySectionSplit = ArrayUtils.indexOf(readBytes, SECTION_SPLIT, firstSectionSplit + 1);
             byte[] keyBytes = Arrays.copyOfRange(readBytes, firstSectionSplit + 1, keySectionSplit);
-            PlatinumArenas.INSTANCE.getLogger().info("Keybyte size = " + keyBytes.length);
+            //PlatinumArenas.INSTANCE.getLogger().info("Keybyte size = " + keyBytes.length);
             String currentKey = "";
 
 
@@ -226,7 +226,7 @@ public class ArenaIO {
 
             for (byte[] key : Util.split(new byte[] {KEY_SPLIT}, keyBytes)) {
                 String blockData = new String(key, StandardCharsets.US_ASCII);
-                PlatinumArenas.INSTANCE.getLogger().info("Loaded block key: " + blockData);
+                //PlatinumArenas.INSTANCE.getLogger().info("Loaded block key: " + blockData);
                 BlockData data = Bukkit.createBlockData(blockData);
                 blockDataSet.add(data);
             }
@@ -248,7 +248,7 @@ public class ArenaIO {
             byte[] arenaSectionSplit = {0x00, 0x00, 0x00, ARENASECTION_SPLIT};
 
             blockBytes = Arrays.copyOfRange(blockBytes, 2, blockBytes.length); //Cut the 2 bytes off at the front
-            PlatinumArenas.INSTANCE.getLogger().info(blockBytes.length + " bytes in blockBytes");
+            //PlatinumArenas.INSTANCE.getLogger().info(blockBytes.length + " bytes in blockBytes");
 
             ByteBuffer buffer = ByteBuffer.allocate(blockBytes.length);
             buffer.put(blockBytes);
@@ -362,7 +362,7 @@ public class ArenaIO {
             if (f.getName().endsWith(".dat")) {
                 try {
                     Arena arena = ArenaIO.loadArena(f);
-                    PlatinumArenas.INSTANCE.getLogger().info("Loaded " + arena.getName() + " from file " + f.getName());
+                    PlatinumArenas.INSTANCE.getLogger().info("Loaded arena \"" + arena.getName() + "\" from file " + f.getName());
                     Arena.arenas.put(arena.getName(), arena);
                 } catch (Exception e) {
                     PlatinumArenas.INSTANCE.getLogger().warning("Failed to load arena file \"" + f.getName() + "\"!");

@@ -4,9 +4,14 @@ import com.strangeone101.platinumarenas.Arena;
 import com.strangeone101.platinumarenas.ArenaCommand;
 import com.strangeone101.platinumarenas.PlatinumArenas;
 import com.strangeone101.platinumarenas.Util;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,15 +27,30 @@ public class ListCommand extends ArenaCommand {
             return;
         }
 
-        List<String> arenas = new ArrayList<String>();
+        List<TextComponent> arenas = new ArrayList<TextComponent>();
 
         for (Arena arena : Arena.arenas.values()) {
             int area = arena.getWidth() * arena.getHeight() * arena.getLength();
             String size = area < 2000 ? "Very Small" : (area < 10_000 ? "Small" : (area < 50_000 ? "Medium" : (area < 200_000 ? "Large" : (area < 2_000_000 ? "Very Large" : ("Insane")))));
 
-            arenas.add(arena.getName() + " " + ChatColor.GREEN + " - " + ChatColor.YELLOW + arena.getWidth() + " x "
-                    + arena.getHeight() + " x " + arena.getLength() + ChatColor.GREEN
-                    + " (" + arena.getCorner1().getWorld().getName() + ChatColor.GREEN + ")");
+            int x = arena.getCorner1().getBlockX() + (arena.getWidth() / 2);
+            int y = arena.getCorner1().getBlockY() + (arena.getHeight() / 2);
+            int z = arena.getCorner1().getBlockZ() + (arena.getLength() / 2);
+
+            String string = ChatColor.GREEN + " - " + ChatColor.YELLOW + arena.getName() + " (" + size + ")";
+
+            TextComponent arenaComponent = new TextComponent("");
+            for (BaseComponent c : TextComponent.fromLegacyText(PlatinumArenas.PREFIX + string)) arenaComponent.addExtra(c);
+            arenaComponent.setColor(net.md_5.bungee.api.ChatColor.RED);
+            String s = ChatColor.YELLOW + "Dimensions: " + ChatColor.GRAY + arena.getWidth() + " x " + arena.getHeight() + " x " + arena.getLength()
+                    + "\n" + ChatColor.YELLOW + "Size: " + ChatColor.GRAY + NumberFormat.getInstance().format(area) + " blocks" +
+                    "\n" + ChatColor.YELLOW + "Coords: " + ChatColor.GRAY + x + " " + y + " " + z +
+                    "\n" + ChatColor.YELLOW + "World: " + ChatColor.GRAY + arena.getCorner1().getWorld().getName() + "\n\n" +
+                    ChatColor.YELLOW + "Click to teleport to the arena!";
+            arenaComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, TextComponent.fromLegacyText(s)));
+            arenaComponent.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tp " + x + " " + y + " " + z));
+
+            arenas.add(arenaComponent);
         }
 
         int page = 1;
@@ -45,7 +65,8 @@ public class ListCommand extends ArenaCommand {
 
         sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Listing all the arenas: ");
         for (int i = page * 10 - 10; i < page * 10 && i < arenas.size(); i++) {
-            sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " > " + arenas.get(i));
+            //sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " - " + arenas.get(i));
+            sender.spigot().sendMessage(arenas.get(i));
         }
 
         if (arenas.size() > 10) {

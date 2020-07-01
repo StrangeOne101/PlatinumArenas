@@ -35,6 +35,9 @@ public class Arena {
     private Location corner1;
     private Location corner2;
 
+    private boolean beingReset = false;
+    private boolean cancelReset = false;
+
     @Deprecated
     private short[] blocks;
 
@@ -138,14 +141,16 @@ public class Arena {
         //PlatinumArenas.INSTANCE.getLogger().info("Key took " + (System.currentTimeMillis() - time) + "ms");
     }
 
-    public void reset(int resetSpeed) {
+    public void reset(int resetSpeed, Runnable... callback) {
         if (getSections().size() == 0) return;
+
+        this.beingReset = true;
 
         List<Section> sectionsClone = Lists.newArrayList(getSections());
 
         int perTickEachSection = resetSpeed / getSections().size();
 
-        loopyReset(sectionsClone, perTickEachSection);
+        loopyReset(sectionsClone, perTickEachSection, callback);
     }
 
     /**
@@ -153,20 +158,33 @@ public class Arena {
      * @param sections The sections to reset
      * @param amount The amount of blocks each section should reset
      */
-    private void loopyReset(List<Section> sections, int amount) {
+    private void loopyReset(List<Section> sections, int amount, Runnable... callbacks) {
         List<Section> nextTime = new ArrayList<>();
+        if (cancelReset) {
+            beingReset = false;
+            cancelReset = false;
+
+            for (Section section : sections) {
+                section.cancelReset();
+            }
+            return;
+        }
         for (Section s : sections) {
             if (!s.reset(amount)) {
                 nextTime.add(s);
             }
         }
 
-        if (nextTime.size() == 0) return;
+        if (nextTime.size() == 0) {
+            for (Runnable r : callbacks) r.run();
+            beingReset = false;
+            return;
+        }
 
         new BukkitRunnable() {
             @Override
             public void run() {
-                loopyReset(nextTime, amount);
+                loopyReset(nextTime, amount, callbacks);
             }
         }.runTaskLater(PlatinumArenas.INSTANCE, 1L);
     }
@@ -261,7 +279,7 @@ public class Arena {
         }
 
         String totalSize = NumberFormat.getInstance().format(width * length * height);
-        PlatinumArenas.INSTANCE.getLogger().info("Creating new arena. Size is " + width + " x " + height + " x " + length + "and totals " + totalSize + " blocks.");
+        PlatinumArenas.INSTANCE.getLogger().info("Creating new arena. Size is " + width + " x " + height + " x " + length + " and totals " + totalSize + " blocks.");
 
         player.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Arena size is " + ChatColor.YELLOW + width + " x " + height + " x " + length + " " + ChatColor.GREEN + " and totals " + ChatColor.YELLOW + totalSize + " blocks.");
         if (sectionsX * sectionsZ > 1) player.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " " + (sectionsX * sectionsZ) + " sections will be created.");
@@ -278,6 +296,7 @@ public class Arena {
         data.sections = new ArrayList<>();
         data.maxBlocks = width * length * height;
         data.tick = 1;
+        data.lastUpdate = System.currentTimeMillis() - 5000;
 
         long time = System.currentTimeMillis();
 
@@ -307,6 +326,18 @@ public class Arena {
         loopyCreate(data, ConfigManager.BLOCKS_ANALYZED_PER_SECOND / 20, player, runnable);
 
         return arena;
+    }
+
+    public boolean isBeingReset() {
+        return beingReset;
+    }
+
+    public boolean isBeingCanceled() {
+        return cancelReset;
+    }
+
+    public void cancelReset() {
+        if (isBeingReset()) cancelReset = true;
     }
 
     /**
@@ -388,7 +419,7 @@ public class Arena {
                 if (keyList.size() > data.arena.keys.length) data.arena.addKeys(keyList);
                 data.totalBlocks++;
                 data.index++;
-                data.lastUpdate = System.currentTimeMillis();
+                updatePlayer(player, data);
                 continue;
             }
 
@@ -398,6 +429,7 @@ public class Arena {
                 if (keyList.size() > data.arena.keys.length) data.arena.addKeys(keyList);
                 data.index++;
                 data.totalBlocks++;
+                updatePlayer(player, data);
                 continue;
             }
 
@@ -409,17 +441,7 @@ public class Arena {
             data.index++;
             data.totalBlocks++;
 
-            if (System.currentTimeMillis() - data.lastUpdate > 10 * 1000) {
-                double perc = ((double)data.totalBlocks / (double)data.maxBlocks);
-                NumberFormat format = NumberFormat.getPercentInstance();
-                format.setMinimumFractionDigits(2);
-                String percS = format.format(perc);
-                if (player != null && player.isOnline()) {
-                    player.sendMessage(ChatColor.GREEN + "Arena " + percS + " analyzed (" + NumberFormat.getInstance().format(data.totalBlocks) + " blocks)");
-                }
-                PlatinumArenas.INSTANCE.getLogger().info("Arena " + percS + " analyzed (" + NumberFormat.getInstance().format(data.totalBlocks) + " blocks)");
-                data.lastUpdate = System.currentTimeMillis();
-            }
+            updatePlayer(player, data);
         }
         data.tick++;
         if (keyList.size() > data.arena.keys.length) data.arena.addKeys(keyList);
@@ -431,6 +453,20 @@ public class Arena {
                 loopyCreate(data, amount, player, onFinished);
             }
         }.runTaskLater(PlatinumArenas.INSTANCE, 1L);
+    }
+
+    private static void updatePlayer(Player player, CreationLoopinData data) {
+        if (System.currentTimeMillis() - data.lastUpdate > 10 * 1000) {
+            double perc = ((double)data.totalBlocks / (double)data.maxBlocks);
+            NumberFormat format = NumberFormat.getPercentInstance();
+            format.setMinimumFractionDigits(2);
+            String percS = format.format(perc);
+            if (player != null && player.isOnline()) {
+                player.sendMessage(ChatColor.GREEN + "Arena " + percS + " analyzed (" + NumberFormat.getInstance().format(data.totalBlocks) + " blocks)");
+            }
+            PlatinumArenas.INSTANCE.getLogger().info("Arena " + percS + " analyzed (" + NumberFormat.getInstance().format(data.totalBlocks) + " blocks)");
+            data.lastUpdate = System.currentTimeMillis();
+        }
     }
 
 
