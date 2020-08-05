@@ -11,6 +11,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,69 +80,82 @@ public class BorderCommand extends ArenaCommand {
     }
 
     public static void sendBorder(Arena arena, Player player, boolean revert) {
+        List<BukkitRunnable> runnables = new ArrayList<>();
         for (int i = 0; i < arena.getSections().size(); i++) {
             Section section = arena.getSections().get(i);
-            int x1 = section.getStart().getBlockX();
-            int x2 = section.getEnd().getBlockX();
-            int y1 = section.getStart().getBlockY();
-            int y2 = section.getEnd().getBlockY();
-            int z1 = section.getStart().getBlockZ();
-            int z2 = section.getEnd().getBlockZ();
+            final int x1 = section.getStart().getBlockX();
+            final int x2 = section.getEnd().getBlockX();
+            final int y1 = section.getStart().getBlockY();
+            final int y2 = section.getEnd().getBlockY();
+            final int z1 = section.getStart().getBlockZ();
+            final int z2 = section.getEnd().getBlockZ();
+            final int counter = i;
 
-            for (int x = x1; x <= x2; x++) {
-                for (int z = z1; z <= z2 ; z += z2-z1) {
+            BukkitRunnable r = new BukkitRunnable() {
+                @Override
+                public void run() {
+                    for (int x = x1; x <= x2; x++) {
+                        for (int z = z1; z <= z2 ; z += z2-z1) {
 
-                    Location loc = new Location(arena.getCorner1().getWorld(), x, y1, z);
-                    player.sendBlockChange(loc, revert ? loc.getBlock().getBlockData() : (i % 2 == 0 ? BORDER_1.createBlockData() : BORDER_2.createBlockData()));
+                            Location loc = new Location(arena.getCorner1().getWorld(), x, y1, z);
+                            player.sendBlockChange(loc, revert ? loc.getBlock().getBlockData() : (counter % 2 == 0 ? BORDER_1.createBlockData() : BORDER_2.createBlockData()));
 
-                    loc = new Location(arena.getCorner1().getWorld(), x, y2, z);
-                    player.sendBlockChange(loc, revert ? loc.getBlock().getBlockData() : (i % 2 == 0 ? BORDER_1.createBlockData() : BORDER_2.createBlockData()));
+                            loc = new Location(arena.getCorner1().getWorld(), x, y2, z);
+                            player.sendBlockChange(loc, revert ? loc.getBlock().getBlockData() : (counter % 2 == 0 ? BORDER_1.createBlockData() : BORDER_2.createBlockData()));
 
-                    try {
-                        int y = loc.getWorld().getHighestBlockYAt(loc.clone());
-                        if (y < y1 || y > y2) continue;
-                        loc = new Location(arena.getCorner1().getWorld(), x, y, z);
-                    } catch (NullPointerException e) {
-                        continue;
+                            try {
+                                int y = loc.getWorld().getHighestBlockYAt(loc.clone());
+                                if (y < y1 || y > y2) continue;
+                                loc = new Location(arena.getCorner1().getWorld(), x, y, z);
+                            } catch (NullPointerException e) {
+                                continue;
+                            }
+
+                            player.sendBlockChange(loc, revert ? loc.getBlock().getBlockData() : (counter % 2 == 0 ? BORDER_1.createBlockData() : BORDER_2.createBlockData()));
+
+                        }
                     }
 
-                    player.sendBlockChange(loc, revert ? loc.getBlock().getBlockData() : (i % 2 == 0 ? BORDER_1.createBlockData() : BORDER_2.createBlockData()));
+                    for (int z = z1; z <= z2; z++) {
+                        for (int x = x1; x <= x2; x += x2-x1) {
+                            Location loc = new Location(arena.getCorner1().getWorld(), x, y1, z);
+                            player.sendBlockChange(loc, revert ? loc.getBlock().getBlockData() : (counter % 2 == 0 ? BORDER_1.createBlockData() : BORDER_2.createBlockData()));
 
-                }
-            }
+                            loc = new Location(arena.getCorner1().getWorld(), x, y2, z);
+                            player.sendBlockChange(loc, revert ? loc.getBlock().getBlockData() : (counter % 2 == 0 ? BORDER_1.createBlockData() : BORDER_2.createBlockData()));
 
-            for (int z = z1; z <= z2; z++) {
-                for (int x = x1; x <= x2; x += x2-x1) {
-                    Location loc = new Location(arena.getCorner1().getWorld(), x, y1, z);
-                    player.sendBlockChange(loc, revert ? loc.getBlock().getBlockData() : (i % 2 == 0 ? BORDER_1.createBlockData() : BORDER_2.createBlockData()));
-
-                    loc = new Location(arena.getCorner1().getWorld(), x, y2, z);
-                    player.sendBlockChange(loc, revert ? loc.getBlock().getBlockData() : (i % 2 == 0 ? BORDER_1.createBlockData() : BORDER_2.createBlockData()));
-
-                    try {
-                        int y = loc.getWorld().getHighestBlockYAt(loc.clone());
-                        if (y < y1 || y > y2) continue;
-                        loc = new Location(arena.getCorner1().getWorld(), x, y, z);
-                    } catch (NullPointerException e) {
-                        continue;
+                            try {
+                                int y = loc.getWorld().getHighestBlockYAt(loc.clone());
+                                if (y < y1 || y > y2) continue;
+                                loc = new Location(arena.getCorner1().getWorld(), x, y, z);
+                            } catch (NullPointerException e) {
+                                continue;
+                            }
+                            player.sendBlockChange(loc, revert ? loc.getBlock().getBlockData() : (counter % 2 == 0 ? BORDER_1.createBlockData() : BORDER_2.createBlockData()));
+                        }
                     }
-                    player.sendBlockChange(loc, revert ? loc.getBlock().getBlockData() : (i % 2 == 0 ? BORDER_1.createBlockData() : BORDER_2.createBlockData()));
+
+                    for (int y = y1; y <= y2; y++) {
+                        Location loc = new Location(arena.getCorner1().getWorld(), x1, y, z1);
+                        player.sendBlockChange(loc, revert ? loc.getBlock().getBlockData() : (counter % 2 == 0 ? BORDER_1.createBlockData() : BORDER_2.createBlockData()));
+
+                        loc = new Location(arena.getCorner1().getWorld(), x2, y, z1);
+                        player.sendBlockChange(loc, revert ? loc.getBlock().getBlockData() : (counter % 2 == 0 ? BORDER_1.createBlockData() : BORDER_2.createBlockData()));
+
+                        loc = new Location(arena.getCorner1().getWorld(), x1, y, z2);
+                        player.sendBlockChange(loc, revert ? loc.getBlock().getBlockData() : (counter % 2 == 0 ? BORDER_1.createBlockData() : BORDER_2.createBlockData()));
+
+                        loc = new Location(arena.getCorner1().getWorld(), x2, y, z2);
+                        player.sendBlockChange(loc, revert ? loc.getBlock().getBlockData() : (counter % 2 == 0 ? BORDER_1.createBlockData() : BORDER_2.createBlockData()));
+                    }
                 }
-            }
+            };
 
-            for (int y = y1; y <= y2; y++) {
-                Location loc = new Location(arena.getCorner1().getWorld(), x1, y, z1);
-                player.sendBlockChange(loc, revert ? loc.getBlock().getBlockData() : (i % 2 == 0 ? BORDER_1.createBlockData() : BORDER_2.createBlockData()));
+            runnables.add(r);
+        }
 
-                loc = new Location(arena.getCorner1().getWorld(), x2, y, z1);
-                player.sendBlockChange(loc, revert ? loc.getBlock().getBlockData() : (i % 2 == 0 ? BORDER_1.createBlockData() : BORDER_2.createBlockData()));
-
-                loc = new Location(arena.getCorner1().getWorld(), x1, y, z2);
-                player.sendBlockChange(loc, revert ? loc.getBlock().getBlockData() : (i % 2 == 0 ? BORDER_1.createBlockData() : BORDER_2.createBlockData()));
-
-                loc = new Location(arena.getCorner1().getWorld(), x2, y, z2);
-                player.sendBlockChange(loc, revert ? loc.getBlock().getBlockData() : (i % 2 == 0 ? BORDER_1.createBlockData() : BORDER_2.createBlockData()));
-            }
+        for (int i = 0; i < runnables.size(); i++) {
+            runnables.get(i).runTaskLater(PlatinumArenas.INSTANCE, i + 1);
         }
     }
 }
