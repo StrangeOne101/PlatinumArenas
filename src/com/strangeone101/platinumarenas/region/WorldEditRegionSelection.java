@@ -62,6 +62,6 @@ public class WorldEditRegionSelection extends IRegionSelection {
 
     @Override
     public Material getWand() {
-        return Material.getMaterial(WorldEdit.getInstance().getConfiguration().wandItem);
+        return Material.matchMaterial(WorldEdit.getInstance().getConfiguration().wandItem) == null ? Material.WOODEN_AXE : Material.matchMaterial(WorldEdit.getInstance().getConfiguration().wandItem);
     }
 }
