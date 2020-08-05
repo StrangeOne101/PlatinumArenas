@@ -3,7 +3,6 @@ package com.strangeone101.platinumarenas.commands;
 import com.strangeone101.platinumarenas.Arena;
 import com.strangeone101.platinumarenas.ArenaCommand;
 import com.strangeone101.platinumarenas.PlatinumArenas;
-import com.strangeone101.platinumarenas.RegionSelection;
 import org.bukkit.ChatColor;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
@@ -29,11 +28,13 @@ public class CreateCommand extends ArenaCommand {
             return;
         }
 
+        String wand = PlatinumArenas.INSTANCE.getRegionSelection().getWand().toString();
+
         if (args.size() == 0) {
-            if (RegionSelection.hasSelectedRegion((Player)sender)) {
+            if (PlatinumArenas.INSTANCE.getRegionSelection().hasSelectedRegion((Player)sender)) {
                 sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " You've already selected a region. Finish the arena creation with /arena create [name]");
             } else {
-                sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " Create an arena by selecting a region with a WOODEN_AXE and then run /arena create [name]");
+                sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " Create an arena by selecting a region with a " + wand + " and then run /arena create [name]");
             }
         } else {
             if (Arena.arenas.containsKey(args.get(0).toLowerCase())) {
@@ -41,8 +42,8 @@ public class CreateCommand extends ArenaCommand {
                 return;
             }
 
-            if (!RegionSelection.hasSelectedRegion((Player)sender)) {
-                sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " Create an arena by selecting a region with a WOODEN_AXE and then run /arena create [name]");
+            if (!PlatinumArenas.INSTANCE.getRegionSelection().hasSelectedRegion((Player)sender)) {
+                sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " Create an arena by selecting a region with a " + wand + " and then run /arena create [name]");
                 return;
             }
 
@@ -51,7 +52,7 @@ public class CreateCommand extends ArenaCommand {
                 return;
             }
 
-            Block[] corners = RegionSelection.getRegionCorners((Player)sender);
+            Block[] corners = PlatinumArenas.INSTANCE.getRegionSelection().getRegionCorners((Player)sender);
             Arena.createNewArena(args.get(0).toLowerCase(), corners[0].getLocation(), corners[1].getLocation(), (Player)sender);
 
         }

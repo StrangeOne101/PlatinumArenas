@@ -1,5 +1,9 @@
 package com.strangeone101.platinumarenas;
 
+import com.strangeone101.platinumarenas.region.DefaultRegionSelection;
+import com.strangeone101.platinumarenas.region.IRegionSelection;
+import com.strangeone101.platinumarenas.region.WorldEditRegionSelection;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -7,7 +11,6 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
 
 public class PlatinumArenas extends JavaPlugin {
 
@@ -16,6 +19,8 @@ public class PlatinumArenas extends JavaPlugin {
     public static final String PREFIX = ChatColor.RED + "[" + ChatColor.GRAY + "PlatinumArenas" + ChatColor.RED + "]";
 
     public static UUID DEFAULT_OWNER = UUID.fromString("00000000-0000-0000-0000-000000000000");
+
+    private IRegionSelection regionSelection;
 
     @Override
     public void onEnable() {
@@ -26,7 +31,6 @@ public class PlatinumArenas extends JavaPlugin {
         async(ArenaIO::loadAllArenas);
 
 
-
         ArenaCommand.createCommands();
         getCommand("platinumarenas").setExecutor(ArenaCommand.getCommandExecutor());
         getCommand("platinumarenas").setTabCompleter(ArenaCommand.getTabCompleter());
@@ -34,6 +38,12 @@ public class PlatinumArenas extends JavaPlugin {
         File folder = new File(getDataFolder(), "Arenas");
         if (!folder.exists()) {
             folder.mkdirs();
+        }
+
+        if (Bukkit.getPluginManager().getPlugin("WorldEdit") != null) {
+            regionSelection = new WorldEditRegionSelection();
+        } else {
+            regionSelection = new DefaultRegionSelection();
         }
 
 
@@ -54,5 +64,9 @@ public class PlatinumArenas extends JavaPlugin {
                 }
             }
         }.runTaskAsynchronously(PlatinumArenas.INSTANCE);
+    }
+
+    public IRegionSelection getRegionSelection() {
+        return regionSelection;
     }
 }
