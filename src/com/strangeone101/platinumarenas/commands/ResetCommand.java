@@ -78,7 +78,7 @@ public class ResetCommand extends ArenaCommand {
     private void resetArena(Arena arena, ResetSpeed speed, CommandSender sender) {
         sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Resetting arena \"" + arena.getName() + "\"!");
         long time = System.currentTimeMillis();
-        arena.reset(speed.getAmount() / 20, () -> {
+        arena.reset(speed.getAmount() / 20, sender, () -> {
             if (sender != null && (!(sender instanceof Player) || ((Player)sender).isOnline())) {
                 long took = System.currentTimeMillis() - time;
                 String tookS = took < 1000 ? took + "ms" : (took > 1000 * 120 ? took / 60000 + "m" : took / 1000 + "s");

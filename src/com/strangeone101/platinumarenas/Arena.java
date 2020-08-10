@@ -6,6 +6,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -131,7 +132,7 @@ public class Arena {
         //PlatinumArenas.INSTANCE.getLogger().info("Key took " + (System.currentTimeMillis() - time) + "ms");
     }
 
-    public void reset(int resetSpeed, Runnable... callback) {
+    public void reset(int resetSpeed, CommandSender sender, Runnable... callback) {
         if (getSections().size() == 0) return;
 
         this.beingReset = true;
@@ -140,6 +141,7 @@ public class Arena {
         data.sectionList = new ArrayList<>(getSections()); //Clone
         data.maxBlocksThisTick = resetSpeed;
         data.speed = resetSpeed;
+        data.sender = sender;
         for (Section s : getSections()) {
             int sectionAmount = (int)((double)resetSpeed / (double)getTotalBlocks() * (double)s.getTotalBlocks());
             if (sectionAmount <= 0) sectionAmount = 1; //Do AT LEAST one block per tick in each section
@@ -165,11 +167,13 @@ public class Arena {
         }
         data.blocksThisTick = 0;
         List<Section> iteratingList = new ArrayList<>(data.sectionList); //So we don't remove while we are going through it
+        int sectionsRemovedThisTick = 0;
         for (int i = 0; i < iteratingList.size(); i++) {
             Section s = iteratingList.get(i);
             if (s.reset(data.sections.get(s))) {
                 data.sections.remove(s);
                 data.sectionList.remove(s);
+                sectionsRemovedThisTick++;
 
                 if (data.sections.size() == 0) break;
 
@@ -184,7 +188,6 @@ public class Arena {
             }
             data.blocksThisTick += s.getBlocksResetThisTick();
 
-
             //If we have gone over the max, reshuffle the section order to make sections
             //that we didn't get to yet come first next time
             if (data.blocksThisTick > data.maxBlocksThisTick) {
@@ -192,7 +195,7 @@ public class Arena {
                 data.sectionList.clear();
 
                 //Put the next section in the i loop first, continue through the rest, then loop back to the start for the ones already done
-                for (int j = i + 1; j < oldSections.size() + i + 1; j++) {
+                for (int j = i + 1 - sectionsRemovedThisTick; j < oldSections.size() + i + 1 - sectionsRemovedThisTick; j++) {
                     data.sectionList.add(oldSections.get(j >= oldSections.size() ? j - oldSections.size() : j));
                 }
             }
@@ -382,6 +385,8 @@ public class Arena {
         int blocksThisTick = 0;
         int maxBlocksThisTick;
         int speed;
+        CommandSender sender;
+        long overloadWarning;
     }
 
     /**
