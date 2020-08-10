@@ -12,7 +12,7 @@ An arena management plugin that supports arenas of any size. Even arenas of 200 
 
 ## Resetting an arena
 
-There are 6 different speeds you can reset arenas at. These will soon be configurable. `VERYSLOW`, `SLOW`, `NORMAL`, `FAST`, `VERYFAST` and `EXTREME`. If you don't provide a speed, the arena will reset at normal speed.
+There are 7 different speeds you can reset arenas at. These will soon be configurable. `VERYSLOW`, `SLOW`, `NORMAL`, `FAST`, `VERYFAST` and `EXTREME`. There is also an `INSTANT` speed that you will have to confirm with another command. If you don't provide a speed, the arena will reset at normal speed.
 
 If the arena is resetting too slow or too fast for your liking, you can cancel the reset with `/arena cancel` and try again with a different speed.
 
@@ -36,3 +36,4 @@ An arena's border can be toggled with `/arena border <name>`. This can allow you
 - `platinumarenas.reset` - Allows resetting of arenas
 - `platinumarenas.list` - Allows usage of the arena list command
 - `platinumarenas.border` - Allows toggling the visibility of arena borders
+- `platinumarenas.reset.instant` - Allows you to use the instant speed. Has it's own permission because it's dangerous.
