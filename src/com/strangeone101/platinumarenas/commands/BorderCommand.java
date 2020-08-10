@@ -39,6 +39,11 @@ public class BorderCommand extends ArenaCommand {
             return;
         }
 
+        if (!PlatinumArenas.INSTANCE.isReady()) {
+            sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " Arenas have not finished loading yet!");
+            return;
+        }
+
         if (args.size() == 0) {
             if (borders.containsKey(sender)) {
                 removePlayer(borders.get(sender), ((Player)sender));

@@ -23,6 +23,11 @@ public class DeleteCommand extends ArenaCommand {
             return;
         }
 
+        if (!PlatinumArenas.INSTANCE.isReady()) {
+            sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " Arenas have not finished loading yet!");
+            return;
+        }
+
         if (args.size() == 0) {
             sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " You must provide an arena name! Usage is /arena remove <arena>");
             return;

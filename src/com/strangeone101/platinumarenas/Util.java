@@ -2,6 +2,11 @@ package com.strangeone101.platinumarenas;
 
 import org.bukkit.Location;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -70,6 +75,37 @@ public class Util {
             Integer.parseInt(s);
             return true;
         } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Copies a resource located in the jar to a file.
+     *
+     * @param resourceName The filename of the resource to copy
+     * @param output The file location to copy it to. Should not exist.
+     * @return True if the operation succeeded.
+     */
+    public static boolean saveResource(String resourceName, File output) {
+        if (PlatinumArenas.INSTANCE.getResource(resourceName) == null) return false;
+
+        try {
+            InputStream in = PlatinumArenas.INSTANCE.getResource(resourceName);
+
+            OutputStream out = new FileOutputStream(output);
+            byte[] buf = new byte[256];
+            int len;
+
+            while ((len = in.read(buf)) > 0){
+                out.write(buf, 0, len);
+            }
+
+            out.close();
+            in.close();
+
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
             return false;
         }
     }

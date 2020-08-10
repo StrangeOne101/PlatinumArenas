@@ -35,6 +35,13 @@ public class CancelCommand extends ArenaCommand {
             Arena.arenas.get(args.get(0).toLowerCase()).cancelReset();
             sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.YELLOW + " Reset for arena \"" + args.get(0).toLowerCase() + "\" canceled!");
         } else {
+            //If they have a pending confirm task, cancel it
+            if (ConfirmCommand.confirmTasks.containsKey(sender)) {
+                sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.YELLOW + " Task cancelled.");
+                ConfirmCommand.confirmTasks.remove(sender);
+                return;
+            }
+
             for (Arena arena : Arena.arenas.values()) {
                 if (arena.isBeingReset()) {
                     arena.cancelReset();

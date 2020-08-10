@@ -22,6 +22,8 @@ public class PlatinumArenas extends JavaPlugin {
 
     private IRegionSelection regionSelection;
 
+    protected boolean ready;
+
     @Override
     public void onEnable() {
         INSTANCE = this;
@@ -40,13 +42,15 @@ public class PlatinumArenas extends JavaPlugin {
             folder.mkdirs();
         }
 
+        if (!ConfigManager.setup()) {
+            getLogger().warning("Internal defaults will be used due to config not being loaded!");
+        }
+
         if (Bukkit.getPluginManager().getPlugin("WorldEdit") != null) {
             regionSelection = new WorldEditRegionSelection();
         } else {
             regionSelection = new DefaultRegionSelection();
         }
-
-
     }
 
     /**
@@ -68,5 +72,13 @@ public class PlatinumArenas extends JavaPlugin {
 
     public IRegionSelection getRegionSelection() {
         return regionSelection;
+    }
+
+    /**
+     * Whether the plugin is ready to use arenas.
+     * @return True when all arenas have been loaded
+     */
+    public boolean isReady() {
+        return ready;
     }
 }

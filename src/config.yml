@@ -1,0 +1,17 @@
+# How many blocks can be in each section.
+MaxSectionSize: 28800
+
+# How many blocks are analyzed in arena creation per second. Increasing
+# this will increase the speed arenas are created but will cause more lag.
+AnalyzeBlockSpeed: 49600
+
+# The amount of blocks to reset per second. Normal is the default speed
+# if none is specified when resetting an arena. Must be an integer
+# (a whole number) above 20
+Speeds:
+  VerySlow: 200
+  Slow: 1000
+  Normal: 10000
+  Fast: 40000
+  VeryFast: 100000
+  Extreme: 200000

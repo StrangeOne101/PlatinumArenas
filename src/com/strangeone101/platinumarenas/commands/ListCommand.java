@@ -27,6 +27,11 @@ public class ListCommand extends ArenaCommand {
             return;
         }
 
+        if (!PlatinumArenas.INSTANCE.isReady()) {
+            sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " Arenas have not finished loading yet!");
+            return;
+        }
+
         List<TextComponent> arenas = new ArrayList<TextComponent>();
 
         for (Arena arena : Arena.arenas.values()) {

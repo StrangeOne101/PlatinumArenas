@@ -7,6 +7,7 @@ import com.strangeone101.platinumarenas.PlatinumArenas;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,6 +24,11 @@ public class ResetCommand extends ArenaCommand {
     public void execute(CommandSender sender, List<String> args) {
         if (!sender.hasPermission("platinumarenas.reset")) {
             sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " You don't have permission to run this command!");
+            return;
+        }
+
+        if (!PlatinumArenas.INSTANCE.isReady()) {
+            sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " Arenas have not finished loading yet!");
             return;
         }
 
@@ -47,6 +53,29 @@ public class ResetCommand extends ArenaCommand {
         }
 
         Arena arena = Arena.arenas.get(args.get(0).toLowerCase());
+
+        if (speed == ResetSpeed.INSTANT) { //If they want to reset the arena instantly, warn them beforehand.
+            if (!sender.hasPermission("platinumarenas.reset.instant")) {
+                sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " You don't have permission to reset arenas instantly!");
+                return;
+            }
+            ResetSpeed finalSpeed = speed;
+            ConfirmCommand.confirmTasks.put(sender, () -> resetArena(arena, finalSpeed, sender));
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    ConfirmCommand.confirmTasks.remove(sender);
+                }
+            }.runTaskLater(PlatinumArenas.INSTANCE, 20 * 60); //Remove the task after a min
+            sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.YELLOW + " Are you sure you want to reset arena \"" + arena.getName() + "\" instantly?");
+            sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.YELLOW + " To confirm this, use " + ChatColor.RED + "/arena confirm");
+        } else {
+            resetArena(arena, speed, sender);
+        }
+
+    }
+
+    private void resetArena(Arena arena, ResetSpeed speed, CommandSender sender) {
         sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Resetting arena \"" + arena.getName() + "\"!");
         long time = System.currentTimeMillis();
         arena.reset(speed.getAmount() / 20, () -> {
@@ -67,7 +96,8 @@ public class ResetCommand extends ArenaCommand {
         NORMAL(ConfigManager.BLOCKS_RESET_PER_SECOND_NORMAL),
         FAST(ConfigManager.BLOCKS_RESET_PER_SECOND_FAST),
         VERY_FAST(ConfigManager.BLOCKS_RESET_PER_SECOND_VERYFAST, "veryfast"),
-        EXTREMELY_FAST(ConfigManager.BLOCKS_RESET_PER_SECOND_EXTREME, "extremelyfast", "extreme");
+        EXTREMELY_FAST(ConfigManager.BLOCKS_RESET_PER_SECOND_EXTREME, "extremelyfast", "extreme"),
+        INSTANT(Integer.MAX_VALUE, "instantly");
 
         private int amount;
         private String[] alias;

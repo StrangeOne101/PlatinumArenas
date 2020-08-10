@@ -373,6 +373,7 @@ public class ArenaIO {
         long took = System.currentTimeMillis() - time;
 
         PlatinumArenas.INSTANCE.getLogger().info("Loaded " + Arena.arenas.size() + " arenas in " + took + "ms!");
+        PlatinumArenas.INSTANCE.ready = true;
 
         return Arena.arenas.values();
     }

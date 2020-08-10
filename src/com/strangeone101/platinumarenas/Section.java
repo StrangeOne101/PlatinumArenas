@@ -4,6 +4,8 @@ import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 
+import java.util.Objects;
+
 public class Section {
 
     private Arena parent;         //The arena housing this section
@@ -28,9 +30,13 @@ public class Section {
      */
     private int resetAmountIndex = 0;
 
+    private int maxResetPerTick = 0;
+
     private int index;
     private int locationIndex;
     private int positionIndex;
+
+    private int blocksResetThisTick = 0;
 
     private boolean dirty;
 
@@ -79,6 +85,7 @@ public class Section {
         }
 
         int count = 0;
+        blocksResetThisTick = 0;
 
         while (index < blockTypes.length)
         {
@@ -98,6 +105,7 @@ public class Section {
 
                 count++;
                 positionIndex++;
+                blocksResetThisTick++;
 
                 if (max > 0 && count > max)
                 {
@@ -184,6 +192,17 @@ public class Section {
         return getEnd().getBlockZ() - getStart().getBlockZ() + 1;
     }
 
+    /**
+     * @return The total number of blocks in the arena
+     */
+    public int getTotalBlocks() {
+        return getWidth() * getHeight() * getLength();
+    }
+
+    protected int getBlocksResetThisTick() {
+        return blocksResetThisTick;
+    }
+
     public Location getStart() {
         return start;
     }
@@ -204,5 +223,21 @@ public class Section {
     public String toString()
     {
         return "Section{" + "start=" + start + ", end=" + end + '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Section section = (Section) o;
+        return parent.equals(section.parent) &&
+                start.equals(section.start) &&
+                end.equals(section.end);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(parent, start, end);
+        return result;
     }
 }

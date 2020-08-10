@@ -1,7 +1,5 @@
 package com.strangeone101.platinumarenas;
 
-import com.google.common.collect.Lists;
-import io.netty.util.internal.MathUtil;
 import org.apache.commons.lang.ArrayUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -13,15 +11,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.File;
 import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 public class Arena {
 
@@ -146,20 +136,24 @@ public class Arena {
 
         this.beingReset = true;
 
-        List<Section> sectionsClone = Lists.newArrayList(getSections());
+        ResetLoopinData data = new ResetLoopinData();
+        data.sectionList = new ArrayList<>(getSections()); //Clone
+        data.maxBlocksThisTick = resetSpeed;
+        data.speed = resetSpeed;
+        for (Section s : getSections()) {
+            int sectionAmount = (int)((double)resetSpeed / (double)getTotalBlocks() * (double)s.getTotalBlocks());
+            if (sectionAmount <= 0) sectionAmount = 1; //Do AT LEAST one block per tick in each section
+            data.sections.put(s, sectionAmount); //Store the amount of blocks each section should reset per tick
+        }
 
-        int perTickEachSection = resetSpeed / getSections().size();
-
-        loopyReset(sectionsClone, perTickEachSection, callback);
+        loopyReset(data, callback);
     }
 
     /**
      * Reset with recursion until complete, with each layer adding delay to the last
-     * @param sections The sections to reset
-     * @param amount The amount of blocks each section should reset
+     * @param data The reset data, including sections and the amounts they reset, etc
      */
-    private void loopyReset(List<Section> sections, int amount, Runnable... callbacks) {
-        List<Section> nextTime = new ArrayList<>();
+    private void loopyReset(ResetLoopinData data, Runnable... callbacks) {
         if (cancelReset) {
             beingReset = false;
             cancelReset = false;
@@ -169,13 +163,42 @@ public class Arena {
             }
             return;
         }
-        for (Section s : sections) {
-            if (!s.reset(amount)) {
-                nextTime.add(s);
+        data.blocksThisTick = 0;
+        List<Section> iteratingList = new ArrayList<>(data.sectionList); //So we don't remove while we are going through it
+        for (int i = 0; i < iteratingList.size(); i++) {
+            Section s = iteratingList.get(i);
+            if (s.reset(data.sections.get(s))) {
+                data.sections.remove(s);
+                data.sectionList.remove(s);
+
+                if (data.sections.size() == 0) break;
+
+                int newTotalAmount = data.sectionList.stream().mapToInt((section) -> section.getTotalBlocks()).sum();
+
+                //Recalculate how many blocks to do each tick
+                for (Section s1 : data.sectionList) {
+                    int sectionAmount = (int) ((double)data.speed / (double)newTotalAmount * (double)s.getTotalBlocks());
+                    if (sectionAmount <= 0) sectionAmount = 1; //Do AT LEAST one block per tick in each section
+                    data.sections.put(s1, sectionAmount); //Store the amount of blocks each section should reset per tick
+                }
+            }
+            data.blocksThisTick += s.getBlocksResetThisTick();
+
+
+            //If we have gone over the max, reshuffle the section order to make sections
+            //that we didn't get to yet come first next time
+            if (data.blocksThisTick > data.maxBlocksThisTick) {
+                List<Section> oldSections = new ArrayList<>(data.sectionList); //Clone it again
+                data.sectionList.clear();
+
+                //Put the next section in the i loop first, continue through the rest, then loop back to the start for the ones already done
+                for (int j = i + 1; j < oldSections.size() + i + 1; j++) {
+                    data.sectionList.add(oldSections.get(j >= oldSections.size() ? j - oldSections.size() : j));
+                }
             }
         }
 
-        if (nextTime.size() == 0) {
+        if (data.sections.size() == 0) {
             for (Runnable r : callbacks) r.run();
             beingReset = false;
             return;
@@ -184,7 +207,7 @@ public class Arena {
         new BukkitRunnable() {
             @Override
             public void run() {
-                loopyReset(nextTime, amount, callbacks);
+                loopyReset(data, callbacks);
             }
         }.runTaskLater(PlatinumArenas.INSTANCE, 1L);
     }
@@ -351,6 +374,14 @@ public class Arena {
         long lastUpdate;
         Arena arena;
         short[] blockAmounts, blockTypes = new short[0];
+    }
+
+    private static class ResetLoopinData {
+        Map<Section, Integer> sections = new HashMap<>();
+        List<Section> sectionList = new ArrayList<>();
+        int blocksThisTick = 0;
+        int maxBlocksThisTick;
+        int speed;
     }
 
     /**
@@ -521,6 +552,13 @@ public class Arena {
     }
 
     /**
+     * @return The total number of blocks in the arena
+     */
+    public int getTotalBlocks() {
+        return getWidth() * getHeight() * getLength();
+    }
+
+    /**
      * Returns a relative location object for where the provided index is in the arena. Quick math!
      * @param width Width
      * @param height Height
@@ -539,5 +577,25 @@ public class Arena {
 
     public List<Section> getSections() {
         return sections;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Arena arena = (Arena) o;
+        return name.equals(arena.name) &&
+                Objects.equals(creator, arena.creator) &&
+                Arrays.equals(keys, arena.keys) &&
+                corner1.equals(arena.corner1) &&
+                corner2.equals(arena.corner2) &&
+                properties.equals(arena.properties);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(name, creator, corner1, corner2, properties);
+        result = 31 * result + Arrays.hashCode(keys);
+        return result;
     }
 }
