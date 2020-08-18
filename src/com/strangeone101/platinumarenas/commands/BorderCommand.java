@@ -163,4 +163,13 @@ public class BorderCommand extends ArenaCommand {
             runnables.get(i).runTaskLater(PlatinumArenas.INSTANCE, i + 1);
         }
     }
+
+    @Override
+    protected List<String> getTabCompletion(CommandSender sender, List<String> args) {
+        List<String> completions = new ArrayList<>();
+        if (args.size() < 2) {
+            completions.addAll(Arena.arenas.keySet());
+        }
+        return completions;
+    }
 }

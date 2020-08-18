@@ -8,6 +8,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 public class DeleteCommand extends ArenaCommand {
@@ -69,5 +70,14 @@ public class DeleteCommand extends ArenaCommand {
             }
         }.runTaskLater(PlatinumArenas.INSTANCE, 20 * 30);
 
+    }
+
+    @Override
+    protected List<String> getTabCompletion(CommandSender sender, List<String> args) {
+        List<String> completions = new ArrayList<>();
+        if (args.size() < 2) {
+            completions.addAll(Arena.arenas.keySet());
+        }
+        return completions;
     }
 }

@@ -273,7 +273,7 @@ public class ArenaIO {
                     types[i] = buffer.getShort();
                 }
 
-                Section section = new Section(arena, start, end, types, amounts);
+                Section section = new Section(arena, currentSection, start, end, types, amounts);
                 arena.getSections().add(section);
                 currentSection++;
 

@@ -4,6 +4,7 @@ import com.strangeone101.platinumarenas.commands.BorderCommand;
 import com.strangeone101.platinumarenas.commands.CancelCommand;
 import com.strangeone101.platinumarenas.commands.ConfirmCommand;
 import com.strangeone101.platinumarenas.commands.CreateCommand;
+import com.strangeone101.platinumarenas.commands.DebugCommand;
 import com.strangeone101.platinumarenas.commands.DeleteCommand;
 import com.strangeone101.platinumarenas.commands.ListCommand;
 import com.strangeone101.platinumarenas.commands.ResetCommand;
@@ -98,9 +99,11 @@ public abstract class ArenaCommand {
 
     static TabCompleter getTabCompleter() {
         final TabCompleter completer = (sender, cmd, label, args) -> {
-            if (args.length > 0) {
+            if (args.length > 1) {
                 if (subcommands.containsKey(args[0].toLowerCase())) {
-                    return subcommands.get(args[0].toLowerCase()).getTabCompletion(sender, Arrays.asList(Arrays.copyOfRange(args, 1, args.length)));
+                    List<String> listArgs = new ArrayList<>(Arrays.asList(Arrays.copyOfRange(args, 1, args.length)));
+                    if (listArgs.size() > 0 && listArgs.get(0).equalsIgnoreCase("")) listArgs.remove(0);
+                    return subcommands.get(args[0].toLowerCase()).getTabCompletion(sender, listArgs);
                 }
             }
             return new ArrayList<>();
@@ -117,5 +120,6 @@ public abstract class ArenaCommand {
         subcommands.put("remove", new DeleteCommand());
         subcommands.put("confirm", new ConfirmCommand());
         subcommands.put("cancel", new CancelCommand());
+        subcommands.put("debug", new DebugCommand());
     }
 }

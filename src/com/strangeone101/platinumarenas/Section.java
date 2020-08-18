@@ -14,6 +14,8 @@ public class Section {
     private short[] blockTypes;   //An array of shorts (that are block key indexes)
     private short[] blockAmounts; //An array of how many of that block there are in a line.
 
+    private int ID;
+
     /**
      * The total block index of where the reset is up to. This variable is set
      * back to 0 after the reset pauses (this allows us to reset the arena over
@@ -36,16 +38,21 @@ public class Section {
     private int locationIndex;
     private int positionIndex;
 
+    /**
+     * How many blocks reset this tick. Just because there is no easy way to call this back in the
+     * reset method
+     */
     private int blocksResetThisTick = 0;
 
     private boolean dirty;
 
-    Section(Arena parent, Location start, Location end, short[] blockTypes, short[] blockAmounts) {
+    Section(Arena parent, int ID, Location start, Location end, short[] blockTypes, short[] blockAmounts) {
         this.blockAmounts = blockAmounts;
         this.blockTypes = blockTypes;
         this.parent = parent;
         this.start = start;
         this.end = end;
+        this.ID = ID;
     }
 
     public boolean isResseting() {
@@ -239,5 +246,9 @@ public class Section {
     public int hashCode() {
         int result = Objects.hash(parent, start, end);
         return result;
+    }
+
+    public int getID() {
+        return ID;
     }
 }

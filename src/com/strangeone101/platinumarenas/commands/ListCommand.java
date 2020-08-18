@@ -74,7 +74,7 @@ public class ListCommand extends ArenaCommand {
             sender.spigot().sendMessage(arenas.get(i));
         }
 
-        if (arenas.size() > 10) {
+        if (page + 1 <= arenas.size() / 10 + 1) { //If there is a next page
             sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.YELLOW + " To view the next page, type /arena list " + (page + 1));
         }
     }

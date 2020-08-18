@@ -1,6 +1,8 @@
 package com.strangeone101.platinumarenas;
 
+import com.strangeone101.platinumarenas.commands.DebugCommand;
 import org.apache.commons.lang.ArrayUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -13,6 +15,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.io.File;
 import java.text.NumberFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Arena {
 
@@ -138,14 +141,13 @@ public class Arena {
         this.beingReset = true;
 
         ResetLoopinData data = new ResetLoopinData();
-        data.sectionList = new ArrayList<>(getSections()); //Clone
         data.maxBlocksThisTick = resetSpeed;
         data.speed = resetSpeed;
         data.sender = sender;
         for (Section s : getSections()) {
             int sectionAmount = (int)((double)resetSpeed / (double)getTotalBlocks() * (double)s.getTotalBlocks());
             if (sectionAmount <= 0) sectionAmount = 1; //Do AT LEAST one block per tick in each section
-            data.sections.put(s, sectionAmount); //Store the amount of blocks each section should reset per tick
+            data.sections.put(s.getID(), sectionAmount); //Store the amount of blocks each section should reset per tick
         }
 
         loopyReset(data, callback);
@@ -166,44 +168,54 @@ public class Arena {
             return;
         }
         data.blocksThisTick = 0;
-        List<Section> iteratingList = new ArrayList<>(data.sectionList); //So we don't remove while we are going through it
         int sectionsRemovedThisTick = 0;
-        for (int i = 0; i < iteratingList.size(); i++) {
-            Section s = iteratingList.get(i);
-            if (s.reset(data.sections.get(s))) {
-                data.sections.remove(s);
-                data.sectionList.remove(s);
+
+        for (int sectionsIterated = 0; sectionsIterated < data.sections.size(); sectionsIterated++) {
+            int id = (data.sections.keySet().toArray(new Integer[data.sections.size()])[(sectionsIterated + data.currentSectionResetting) % data.sections.size()]) % getSections().size(); //Get number x in list + offset, and wrap around with %
+            Section s = getSections().get(id);
+            long t = System.nanoTime();
+            boolean reset = s.reset(data.sections.get(id));
+            data.resetMicroseconds += System.nanoTime() - t;
+            if (reset) {
+                t = System.nanoTime();
+                data.sections.remove(id);
+                sectionsIterated--;
                 sectionsRemovedThisTick++;
 
-                if (data.sections.size() == 0) break;
+                if (data.sections.size() == 0) {
+                    data.calculateMicroseconds += System.nanoTime() - t;
+                    break;
+                }
 
-                int newTotalAmount = data.sectionList.stream().mapToInt((section) -> section.getTotalBlocks()).sum();
+                int newTotalAmount = data.sections.keySet().parallelStream().mapToInt((sectionid) -> (getSections().get(sectionid).getTotalBlocks())).sum();
 
                 //Recalculate how many blocks to do each tick
-                for (Section s1 : data.sectionList) {
+                List<Section> sectionList = data.sections.keySet().parallelStream().map((sectionid) -> getSections().get(sectionid)).collect(Collectors.toList());
+                for (Section s1 : sectionList) {
                     int sectionAmount = (int) ((double)data.speed / (double)newTotalAmount * (double)s.getTotalBlocks());
                     if (sectionAmount <= 0) sectionAmount = 1; //Do AT LEAST one block per tick in each section
-                    data.sections.put(s1, sectionAmount); //Store the amount of blocks each section should reset per tick
+                    data.sections.put(s1.getID(), sectionAmount); //Store the amount of blocks each section should reset per tick
                 }
+                data.calculateMicroseconds += System.nanoTime() - t;
             }
             data.blocksThisTick += s.getBlocksResetThisTick();
 
-            //If we have gone over the max, reshuffle the section order to make sections
-            //that we didn't get to yet come first next time
+            //If we have gone over the max, set the section we should start at next tick
             if (data.blocksThisTick > data.maxBlocksThisTick) {
-                List<Section> oldSections = new ArrayList<>(data.sectionList); //Clone it again
-                data.sectionList.clear();
-
-                //Put the next section in the i loop first, continue through the rest, then loop back to the start for the ones already done
-                for (int j = i + 1 - sectionsRemovedThisTick; j < oldSections.size() + i + 1 - sectionsRemovedThisTick; j++) {
-                    data.sectionList.add(oldSections.get(j >= oldSections.size() ? j - oldSections.size() : j));
-                }
+                data.currentSectionResetting = (sectionsIterated + data.currentSectionResetting) % data.sections.size();
+                data.blocksThisTick += s.getBlocksResetThisTick();
+                break;
             }
+
         }
 
         if (data.sections.size() == 0) {
             for (Runnable r : callbacks) r.run();
             beingReset = false;
+
+            String s = "Reset took " + (data.resetMicroseconds / 1000000) + "ms" + "\n" + "Reset calculations took " + (data.calculateMicroseconds / 1000000) + "ms";
+            DebugCommand.debugString = s;
+
             return;
         }
 
@@ -380,13 +392,15 @@ public class Arena {
     }
 
     private static class ResetLoopinData {
-        Map<Section, Integer> sections = new HashMap<>();
-        List<Section> sectionList = new ArrayList<>();
+        Map<Integer, Integer> sections = new HashMap<>();
+        int currentSectionResetting;
         int blocksThisTick = 0;
         int maxBlocksThisTick;
         int speed;
         CommandSender sender;
         long overloadWarning;
+        long calculateMicroseconds;
+        long resetMicroseconds;
     }
 
     /**
@@ -418,7 +432,7 @@ public class Arena {
             loc = start.clone().add(loc);
             if (data.index >= width * height * length) {
                 //PlatinumArenas.INSTANCE.getLogger().info("Debug3: We are at the end");
-                data.sections.add(new Section(data.arena, start, end, data.blockTypes, data.blockAmounts));
+                data.sections.add(new Section(data.arena, data.sections.size(), start, end, data.blockTypes, data.blockAmounts));
                 data.blockAmounts = new short[0];
                 data.blockTypes = new short[0];
                 data.sectionStarts.remove(0);

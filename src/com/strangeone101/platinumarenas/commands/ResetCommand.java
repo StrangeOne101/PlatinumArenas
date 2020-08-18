@@ -131,6 +131,6 @@ public class ResetCommand extends ArenaCommand {
             completions.addAll(Arrays.asList(new String[] {"veryslow", "slow", "normal", "fast", "veryfast", "extreme"}));
         }
 
-        return super.getTabCompletion(sender, args);
+        return completions;
     }
 }
