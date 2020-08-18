@@ -1,6 +1,7 @@
 package com.strangeone101.platinumarenas;
 
 import com.google.common.collect.Lists;
+import com.strangeone101.platinumarenas.commands.DebugCommand;
 import io.netty.util.internal.MathUtil;
 import org.apache.commons.lang.ArrayUtils;
 import org.bukkit.ChatColor;
@@ -159,6 +160,8 @@ public class Arena {
      * @param amount The amount of blocks each section should reset
      */
     private void loopyReset(List<Section> sections, int amount, Runnable... callbacks) {
+        long calculateMicroseconds = 0;
+        long resetMicroseconds = 0;
         List<Section> nextTime = new ArrayList<>();
         if (cancelReset) {
             beingReset = false;
@@ -170,14 +173,25 @@ public class Arena {
             return;
         }
         for (Section s : sections) {
-            if (!s.reset(amount)) {
+            long t = System.nanoTime();
+            boolean b = s.reset(amount);
+            resetMicroseconds += System.nanoTime() - t;
+            t = System.nanoTime();
+            if (!b) {
                 nextTime.add(s);
             }
+            calculateMicroseconds += System.nanoTime() - t;
         }
 
         if (nextTime.size() == 0) {
             for (Runnable r : callbacks) r.run();
             beingReset = false;
+
+            double resetMs = (double)(resetMicroseconds / 1000) / 1000;
+            double calcMs = (double)(calculateMicroseconds / 1000) / 1000;
+            String s = "Reset took " + resetMs + "ms" + "\n" + "Reset calculations took " + calcMs + "ms";
+            DebugCommand.debugString = s;
+
             return;
         }
 
