@@ -15,3 +15,11 @@ Speeds:
   Fast: 40000
   VeryFast: 100000
   Extreme: 200000
+
+# How often the game will update you on the reset progress of arenas.
+# The interval is how long until it can update you again (in seconds),
+# while the percentage is how much it must achieve since it last
+# notified you before it can do so again.
+ResetUpdate:
+  Interval: 10
+  Percent: 15

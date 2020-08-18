@@ -78,14 +78,7 @@ public class ResetCommand extends ArenaCommand {
     private void resetArena(Arena arena, ResetSpeed speed, CommandSender sender) {
         sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Resetting arena \"" + arena.getName() + "\"!");
         long time = System.currentTimeMillis();
-        arena.reset(speed.getAmount() / 20, sender, () -> {
-            if (sender != null && (!(sender instanceof Player) || ((Player)sender).isOnline())) {
-                long took = System.currentTimeMillis() - time;
-                String tookS = took < 1000 ? took + "ms" : (took > 1000 * 120 ? took / 60000 + "m" : took / 1000 + "s");
-                sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Arena \"" + arena.getName() + "\" reset complete (took " + tookS + ")!");
-            }
-
-        });
+        arena.reset(speed.getAmount() / 20, sender);
     }
 
 
@@ -124,11 +117,14 @@ public class ResetCommand extends ArenaCommand {
     @Override
     protected List<String> getTabCompletion(CommandSender sender, List<String> args) {
         List<String> completions = new ArrayList<>();
-        if (args.size() == 0) {
+        if (args.size() <= 1) {
             completions.addAll(Arena.arenas.keySet());
             completions.sort(Comparator.naturalOrder());
-        } else if (args.size() == 1) {
+        } else if (args.size() == 2) {
             completions.addAll(Arrays.asList(new String[] {"veryslow", "slow", "normal", "fast", "veryfast", "extreme"}));
+            if (sender.hasPermission("platinumarenas.reset.instant")) {
+                completions.add("instant");
+            }
         }
 
         return completions;

@@ -135,7 +135,7 @@ public class Arena {
         //PlatinumArenas.INSTANCE.getLogger().info("Key took " + (System.currentTimeMillis() - time) + "ms");
     }
 
-    public void reset(int resetSpeed, CommandSender sender, Runnable... callback) {
+    public void reset(int resetSpeed, CommandSender sender) {
         if (getSections().size() == 0) return;
 
         this.beingReset = true;
@@ -144,20 +144,23 @@ public class Arena {
         data.maxBlocksThisTick = resetSpeed;
         data.speed = resetSpeed;
         data.sender = sender;
+        data.startTime = System.currentTimeMillis();
+        data.totalBlocksToReset = getTotalBlocks();
         for (Section s : getSections()) {
             int sectionAmount = (int)((double)resetSpeed / (double)getTotalBlocks() * (double)s.getTotalBlocks());
             if (sectionAmount <= 0) sectionAmount = 1; //Do AT LEAST one block per tick in each section
             data.sections.put(s.getID(), sectionAmount); //Store the amount of blocks each section should reset per tick
+            data.sectionIDs.add(s.getID());
         }
 
-        loopyReset(data, callback);
+        loopyReset(data, sender);
     }
 
     /**
      * Reset with recursion until complete, with each layer adding delay to the last
      * @param data The reset data, including sections and the amounts they reset, etc
      */
-    private void loopyReset(ResetLoopinData data, Runnable... callbacks) {
+    private void loopyReset(ResetLoopinData data, CommandSender sender) {
         if (cancelReset) {
             beingReset = false;
             cancelReset = false;
@@ -171,7 +174,7 @@ public class Arena {
         int sectionsRemovedThisTick = 0;
 
         for (int sectionsIterated = 0; sectionsIterated < data.sections.size(); sectionsIterated++) {
-            int id = (data.sections.keySet().toArray(new Integer[data.sections.size()])[(sectionsIterated + data.currentSectionResetting) % data.sections.size()]) % getSections().size(); //Get number x in list + offset, and wrap around with %
+            int id = data.sectionIDs.get((sectionsIterated + data.currentSectionResetting) % data.sections.size()) % getSections().size(); //Get number x in list + offset, and wrap around with %
             Section s = getSections().get(id);
             long t = System.nanoTime();
             boolean reset = s.reset(data.sections.get(id));
@@ -179,6 +182,7 @@ public class Arena {
             if (reset) {
                 t = System.nanoTime();
                 data.sections.remove(id);
+                data.sectionIDs.remove((Object)id); //Remove object and not the index
                 sectionsIterated--;
                 sectionsRemovedThisTick++;
 
@@ -199,6 +203,7 @@ public class Arena {
                 data.calculateMicroseconds += System.nanoTime() - t;
             }
             data.blocksThisTick += s.getBlocksResetThisTick();
+            data.totalBlocksReset += s.getBlocksResetThisTick();
 
             //If we have gone over the max, set the section we should start at next tick
             if (data.blocksThisTick > data.maxBlocksThisTick) {
@@ -209,8 +214,24 @@ public class Arena {
 
         }
 
+        long t = System.nanoTime();
+
+        //Update the user on the progress. Only check this every 5 ticks to reduce workload.
+        if (System.currentTimeMillis() > data.lastUpdate + ConfigManager.RESET_UPDATE_INTERVAL * 1000 && data.tick % 5 == 0) {
+            double percentageDone = (double)data.totalBlocksReset / (double)data.totalBlocksToReset * 100;
+
+            if (percentageDone > data.lastPerUpdate + ConfigManager.RESET_UPDATE_PERCENTAGE) {
+                data.lastUpdate = System.currentTimeMillis();
+                data.lastPerUpdate = (float) percentageDone;
+
+                updatePlayerReset(sender, this, (float) percentageDone);
+            }
+        }
+
+        data.tick++;
+        data.calculateMicroseconds += System.nanoTime() - t;
+
         if (data.sections.size() == 0) {
-            for (Runnable r : callbacks) r.run();
             beingReset = false;
 
             double resetMs = (double)(data.resetMicroseconds / 1000) / 1000;
@@ -218,13 +239,19 @@ public class Arena {
             String s = "Reset took " + resetMs + "ms" + "\n" + "Reset calculations took " + calcMs + "ms";
             DebugCommand.debugString = s;
 
+            if (sender != null && (!(sender instanceof Player) || ((Player)sender).isOnline())) {
+                long took = System.currentTimeMillis() - data.startTime;
+                String tookS = took < 1000 ? took + "ms" : (took > 1000 * 120 ? took / 60000 + "m" : took / 1000 + "s");
+                sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Arena \"" + getName() + "\" reset complete (took " + tookS + ")!");
+            }
+
             return;
         }
 
         new BukkitRunnable() {
             @Override
             public void run() {
-                loopyReset(data, callbacks);
+                loopyReset(data, sender);
             }
         }.runTaskLater(PlatinumArenas.INSTANCE, 1L);
     }
@@ -395,6 +422,7 @@ public class Arena {
 
     private static class ResetLoopinData {
         Map<Integer, Integer> sections = new HashMap<>();
+        List<Integer> sectionIDs = new ArrayList<>(); //Having another list instead of making an array from the map each tick is faster
         int currentSectionResetting;
         int blocksThisTick = 0;
         int maxBlocksThisTick;
@@ -403,6 +431,12 @@ public class Arena {
         long overloadWarning;
         long calculateMicroseconds;
         long resetMicroseconds;
+        long startTime;
+        long lastUpdate = System.currentTimeMillis() - (ConfigManager.RESET_UPDATE_INTERVAL / 2 * 1000);
+        float lastPerUpdate = 0F;
+        int tick = 0;
+        int totalBlocksReset = 0;
+        int totalBlocksToReset;
     }
 
     /**
@@ -471,7 +505,7 @@ public class Arena {
                 if (keyList.size() > data.arena.keys.length) data.arena.addKeys(keyList);
                 data.totalBlocks++;
                 data.index++;
-                updatePlayer(player, data);
+                updatePlayerCreate(player, data);
                 continue;
             }
 
@@ -481,7 +515,7 @@ public class Arena {
                 if (keyList.size() > data.arena.keys.length) data.arena.addKeys(keyList);
                 data.index++;
                 data.totalBlocks++;
-                updatePlayer(player, data);
+                updatePlayerCreate(player, data);
                 continue;
             }
 
@@ -493,7 +527,7 @@ public class Arena {
             data.index++;
             data.totalBlocks++;
 
-            updatePlayer(player, data);
+            updatePlayerCreate(player, data);
         }
         data.tick++;
         if (keyList.size() > data.arena.keys.length) data.arena.addKeys(keyList);
@@ -507,7 +541,7 @@ public class Arena {
         }.runTaskLater(PlatinumArenas.INSTANCE, 1L);
     }
 
-    private static void updatePlayer(Player player, CreationLoopinData data) {
+    private static void updatePlayerCreate(Player player, CreationLoopinData data) {
         if (System.currentTimeMillis() - data.lastUpdate > 10 * 1000) {
             double perc = ((double)data.totalBlocks / (double)data.maxBlocks);
             NumberFormat format = NumberFormat.getPercentInstance();
@@ -519,6 +553,13 @@ public class Arena {
             PlatinumArenas.INSTANCE.getLogger().info("Arena " + percS + " analyzed (" + NumberFormat.getInstance().format(data.totalBlocks) + " blocks)");
             data.lastUpdate = System.currentTimeMillis();
         }
+    }
+
+    private static void updatePlayerReset(CommandSender sender, Arena arena, float percentage) {
+        NumberFormat format = NumberFormat.getPercentInstance();
+        format.setMinimumFractionDigits(2);
+        String percS = format.format(percentage / 100);
+        sender.sendMessage(ChatColor.GREEN + "Arena \"" + arena.getName() + "\" reset " + percS + " complete");
     }
 
 

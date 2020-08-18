@@ -20,6 +20,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public abstract class ArenaCommand {
 
@@ -102,9 +103,14 @@ public abstract class ArenaCommand {
             if (args.length > 1) {
                 if (subcommands.containsKey(args[0].toLowerCase())) {
                     List<String> listArgs = new ArrayList<>(Arrays.asList(Arrays.copyOfRange(args, 1, args.length)));
-                    if (listArgs.size() > 0 && listArgs.get(0).equalsIgnoreCase("")) listArgs.remove(0);
-                    return subcommands.get(args[0].toLowerCase()).getTabCompletion(sender, listArgs);
+                    //if (listArgs.size() > 0 && listArgs.get(listArgs.size() - 1).equalsIgnoreCase("")) listArgs.remove(listArgs.size() - 1);
+                    return subcommands.get(args[0].toLowerCase()).getTabCompletion(sender, listArgs).stream()
+                            .filter(s -> s.startsWith(listArgs.get(listArgs.size() - 1))).collect(Collectors.toList());
                 }
+            } else {
+                return subcommands.values().stream().filter(
+                        (subcmd) -> !subcmd.isHidden() && sender.hasPermission("platinumarenas." + subcmd.getCommand()))
+                        .map((subcmd) -> subcmd.getCommand()).filter(s -> s.startsWith(args[args.length - 1])).collect(Collectors.toList());
             }
             return new ArrayList<>();
         };
