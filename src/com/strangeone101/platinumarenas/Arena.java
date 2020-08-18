@@ -217,7 +217,9 @@ public class Arena {
             for (Runnable r : callbacks) r.run();
             beingReset = false;
 
-            String s = "Reset took " + (data.resetMicroseconds / 1000000) + "ms" + "\n" + "Reset calculations took " + (data.calculateMicroseconds / 1000000) + "ms";
+            double resetMs = (double)(data.resetMicroseconds / 1000) / 1000;
+            double calcMs = (double)(data.calculateMicroseconds / 1000) / 1000;
+            String s = "Reset took " + resetMs + "ms" + "\n" + "Reset calculations took " + calcMs + "ms";
             DebugCommand.debugString = s;
 
             return;
