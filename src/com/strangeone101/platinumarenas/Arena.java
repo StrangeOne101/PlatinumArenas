@@ -1,5 +1,6 @@
 package com.strangeone101.platinumarenas;
 
+import com.strangeone101.platinumarenas.commands.DebugCommand;
 import org.apache.commons.lang.ArrayUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -170,12 +171,20 @@ public class Arena {
         int sectionsRemovedThisTick = 0;
         for (int i = 0; i < iteratingList.size(); i++) {
             Section s = iteratingList.get(i);
-            if (s.reset(data.sections.get(s))) {
+
+            long t = System.nanoTime();
+            boolean reset = s.reset(data.sections.get(s));
+            data.resetMicroseconds += System.nanoTime() - t;
+            if (reset) {
+                t = System.nanoTime();
                 data.sections.remove(s);
                 data.sectionList.remove(s);
                 sectionsRemovedThisTick++;
 
-                if (data.sections.size() == 0) break;
+                if (data.sections.size() == 0) {
+                    data.calculateMicroseconds += System.nanoTime() - t;
+                    break;
+                }
 
                 int newTotalAmount = data.sectionList.stream().mapToInt((section) -> section.getTotalBlocks()).sum();
 
@@ -185,11 +194,13 @@ public class Arena {
                     if (sectionAmount <= 0) sectionAmount = 1; //Do AT LEAST one block per tick in each section
                     data.sections.put(s1, sectionAmount); //Store the amount of blocks each section should reset per tick
                 }
+                data.calculateMicroseconds += System.nanoTime() - t;
             }
             data.blocksThisTick += s.getBlocksResetThisTick();
 
             //If we have gone over the max, reshuffle the section order to make sections
             //that we didn't get to yet come first next time
+            t = System.nanoTime();
             if (data.blocksThisTick > data.maxBlocksThisTick) {
                 List<Section> oldSections = new ArrayList<>(data.sectionList); //Clone it again
                 data.sectionList.clear();
@@ -199,11 +210,16 @@ public class Arena {
                     data.sectionList.add(oldSections.get(j >= oldSections.size() ? j - oldSections.size() : j));
                 }
             }
+            data.calculateMicroseconds += System.nanoTime() - t;
         }
 
         if (data.sections.size() == 0) {
             for (Runnable r : callbacks) r.run();
             beingReset = false;
+
+            String s = "Reset took " + (data.resetMicroseconds / 1000000) + "ms" + "\n" + "Reset calculations took " + (data.calculateMicroseconds / 1000000) + "ms";
+            DebugCommand.debugString = s;
+
             return;
         }
 
@@ -387,6 +403,8 @@ public class Arena {
         int speed;
         CommandSender sender;
         long overloadWarning;
+        long calculateMicroseconds;
+        long resetMicroseconds;
     }
 
     /**

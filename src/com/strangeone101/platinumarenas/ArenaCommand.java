@@ -4,6 +4,7 @@ import com.strangeone101.platinumarenas.commands.BorderCommand;
 import com.strangeone101.platinumarenas.commands.CancelCommand;
 import com.strangeone101.platinumarenas.commands.ConfirmCommand;
 import com.strangeone101.platinumarenas.commands.CreateCommand;
+import com.strangeone101.platinumarenas.commands.DebugCommand;
 import com.strangeone101.platinumarenas.commands.DeleteCommand;
 import com.strangeone101.platinumarenas.commands.ListCommand;
 import com.strangeone101.platinumarenas.commands.ResetCommand;
@@ -117,5 +118,6 @@ public abstract class ArenaCommand {
         subcommands.put("remove", new DeleteCommand());
         subcommands.put("confirm", new ConfirmCommand());
         subcommands.put("cancel", new CancelCommand());
+        subcommands.put("debug", new DebugCommand());
     }
 }
