@@ -376,7 +376,7 @@ public class Arena {
 
                 String tookS = took < 1000 ? took + "ms" : (took > 1000 * 120 ? took / 60000 + "m" : took / 1000 + "s");
                 if (player != null && player.isOnline()) {
-                    player.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Done analying! Took " + tookS + " over " + data.tick + " ticks.");
+                    player.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Done analyzing! Took " + tookS + " over " + data.tick + " ticks.");
                     player.sendMessage(PlatinumArenas.PREFIX + ChatColor.YELLOW + " Saving to disk...");
                 }
 
