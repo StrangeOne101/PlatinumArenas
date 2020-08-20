@@ -22,4 +22,4 @@ Speeds:
 # notified you before it can do so again.
 ResetUpdate:
   Interval: 10
-  Percent: 15
+  Percent: 5

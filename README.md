@@ -1,10 +1,10 @@
 # PlatinumArenas
 
-An arena management plugin that supports arenas of any size. Even arenas of 200 million blocks are no problem! Currently requires WorldEdit to create arenas.
+An arena management plugin that supports arenas of any size. Even arenas of 200 million blocks are no problem!
 
 ## Creating an arena
 
-1. Select a region with WorldEdit
+1. Select a region with WorldEdit (or a stick if you don't have WorldEdit)
 2. Run `/arena create <name>`
 3. Wait for the progress to finish!
 
@@ -37,3 +37,4 @@ An arena's border can be toggled with `/arena border <name>`. This can allow you
 - `platinumarenas.list` - Allows usage of the arena list command
 - `platinumarenas.border` - Allows toggling the visibility of arena borders
 - `platinumarenas.reset.instant` - Allows you to use the instant speed. Has it's own permission because it's dangerous.
+- `platinumarenas.debug` - Allows use of the debug command

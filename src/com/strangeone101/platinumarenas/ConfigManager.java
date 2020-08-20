@@ -26,7 +26,7 @@ public class ConfigManager {
     public static int BLOCKS_RESET_PER_SECOND_EXTREME = 10000 * 20;
 
     public static int RESET_UPDATE_INTERVAL = 10;
-    public static float RESET_UPDATE_PERCENTAGE = 15F;
+    public static float RESET_UPDATE_PERCENTAGE = 5F;
 
     private static YamlConfiguration config;
 
