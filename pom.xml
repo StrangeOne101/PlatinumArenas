@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.strangeone101</groupId>
     <artifactId>PlatinumArenas</artifactId>
-    <version>0.5</version>
+    <version>0.6</version>
     <repositories>
         <repository>
             <id>bungeecord-repo</id>

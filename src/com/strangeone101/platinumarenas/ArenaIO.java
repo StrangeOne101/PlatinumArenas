@@ -25,6 +25,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ArenaIO {
 
@@ -32,7 +34,7 @@ public class ArenaIO {
     private static final byte KEY_SPLIT = '\u0003';
     private static final byte ARENASECTION_SPLIT = '\u0004';
 
-    private static final int FILE_VERSION = 1;
+    private static final int FILE_VERSION = 3;
 
     /**
      * Saves an arena to disk.
@@ -56,7 +58,7 @@ public class ArenaIO {
 
             //HEADER SECTION
             String header = FILE_VERSION + "," + arena.getName() + "," + l.getWorld().getName() + "," + l.getBlockX() + "," + l.getBlockY() + "," + l.getBlockZ() + "," +
-                    l2.getBlockX() + "," + l2.getBlockY() + "," + l2.getBlockZ();
+                    l2.getBlockX() + "," + l2.getBlockY() + "," + l2.getBlockZ() + "," + arena.getCreator().toString() + "," + Bukkit.getVersion().split("-", 2)[0];
             byte[] headerBytes = header.getBytes(StandardCharsets.US_ASCII);
 
             //BLOCKDATA KEY SECTION
@@ -182,9 +184,15 @@ public class ArenaIO {
             Location corner1 = null;
             Location corner2 = null;
             UUID owner = PlatinumArenas.DEFAULT_OWNER;
+            int arenaMCVersion = getVersion("1.16.4");
+            int currentMCVersion = getVersion(Bukkit.getVersion().split("-", 2)[0]);
 
             int version = Integer.parseInt(headerString.split(",")[0]);
 
+
+            if (version >= 3) {
+                arenaMCVersion = getVersion(headerString.split(",")[10]);
+            }
             if (version >= 2) {
                 owner = UUID.fromString(headerString.split(",")[9]);
             }
@@ -227,8 +235,37 @@ public class ArenaIO {
             for (byte[] key : Util.split(new byte[] {KEY_SPLIT}, keyBytes)) {
                 String blockData = new String(key, StandardCharsets.US_ASCII);
                 //PlatinumArenas.INSTANCE.getLogger().info("Loaded block key: " + blockData);
-                BlockData data = Bukkit.createBlockData(blockData);
-                blockDataSet.add(data);
+
+                String material = blockData.split("\\[")[0];
+
+                //Since Mojang are amazing and rename blocks (WHY?????)
+                if (material.equalsIgnoreCase("grass_path")) {
+                    if (arenaMCVersion < 1170 && currentMCVersion >= 1170) { //Was renamed in 1.17
+                        blockData = "dirt_path";
+                    }
+                }
+                else if (material.equalsIgnoreCase("cauldron")) {
+                    if (arenaMCVersion < 1170 && currentMCVersion >= 1170) {
+                        if (blockData.contains("[")) { //Contains the water level. If it doesn't, then it's empty
+                            blockData = "water_cauldron" + blockData.split("\\[", 2)[1];
+                        }
+                    }
+                } else if (material.equalsIgnoreCase("beetroots")) { //Beetroot had their age halved
+                    if (arenaMCVersion < 1150 && currentMCVersion >= 1150) {
+                        if (blockData.contains("[")) { //Contains the age
+                            Pattern pattern = Pattern.compile("beetroots\\[age=(\\d)\\]");
+                            Matcher matcher = pattern.matcher(blockData);
+                            int age = Integer.parseInt(matcher.group());
+                            int newAge = 0;
+                            if (age == 7) newAge = 3;
+                            else if (age >= 4 && age <= 6) newAge = 2;
+                            else if (age >= 1 && age <= 3) newAge = 1;
+                            blockData = "beetroots[age=" + newAge + "]";
+                        }
+                    }
+                }
+                BlockData bukkitData = Bukkit.createBlockData(blockData);
+                blockDataSet.add(bukkitData);
             }
 
             Arena arena = new Arena(name, corner1, corner2);
@@ -343,6 +380,31 @@ public class ArenaIO {
 
 
         return null;  //unfinished
+    }
+
+    private static int getVersion(String version) {
+
+        if (!version.matches("\\d+\\.\\d+(\\.\\d+)?")) {
+            PlatinumArenas.INSTANCE.getLogger().warning("Version not valid! Cannot parse version \"" + version + "\"");
+
+            return 1164; //1.16.4
+        }
+
+        String[] split = version.split("\\.", 3);
+
+        int major = Integer.parseInt(split[0]);
+        int minor = 0;
+        int fix = 0;
+
+        if (split.length > 1) {
+            minor = Integer.parseInt(split[1]);
+
+            if (split.length > 2) {
+                fix = Integer.parseInt(split[2]);
+            }
+        }
+
+        return major * 1000 + minor * 10 + fix; //1.16.4 -> 1164; 1.18 -> 1180
     }
 
     /**
