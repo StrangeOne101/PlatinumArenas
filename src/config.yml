@@ -23,3 +23,8 @@ Speeds:
 ResetUpdate:
   Interval: 10
   Percent: 5
+
+# If compression is somehow having issues, this will stop new arenas from being created compressed
+# You can convert existing arenas by double clicking the plugin jar file (so this must be done on
+# your PC)
+DisableCompression: false

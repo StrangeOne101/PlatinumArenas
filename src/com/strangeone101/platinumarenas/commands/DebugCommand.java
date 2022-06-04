@@ -6,14 +6,16 @@ import com.strangeone101.platinumarenas.PlatinumArenas;
 import com.strangeone101.platinumarenas.Section;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
 import java.util.List;
 
+
 public class DebugCommand extends ArenaCommand {
 
-    public static String debugString = "";
+    public static String debugString = PlatinumArenas.INSTANCE.getMCVersion();
 
     public DebugCommand() {
         super("debug", "Debug things with this plugin", "/arena debug <arena>", new String[0]);

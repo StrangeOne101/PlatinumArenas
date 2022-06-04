@@ -1,15 +1,26 @@
 package com.strangeone101.platinumarenas;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.zip.DataFormatException;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
 
 public class Util {
 
@@ -79,6 +90,40 @@ public class Util {
         }
     }
 
+    public static byte[] compress(byte[] bytes) {
+        Deflater compresser = new Deflater();
+        compresser.setInput(bytes);
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream(bytes.length);
+        compresser.finish();
+        byte[] buffer = new byte[1024]; //Compress in 1kb lots
+        while (!compresser.finished()) {
+            int count = compresser.deflate(buffer);
+            outputStream.write(buffer, 0, count);
+        }
+        compresser.end();
+        return outputStream.toByteArray();
+    }
+
+    public static byte[] decompress(byte[] bytes) {
+        Inflater decompresser = new Inflater();
+        decompresser.setInput(bytes);
+
+        try {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream(bytes.length);
+            decompresser.setInput(bytes);
+            byte[] buffer = new byte[1024]; //Decompress in 1kb lots
+            while (!decompresser.finished()) {
+                int count = decompresser.inflate(buffer);
+                outputStream.write(buffer, 0, count);
+            }
+            return outputStream.toByteArray();
+        } catch (DataFormatException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     /**
      * Copies a resource located in the jar to a file.
      *
@@ -108,5 +153,63 @@ public class Util {
             e.printStackTrace();
             return false;
         }
+    }
+
+    public static boolean isPre116Wall(String data) {
+        String type = data.split("\\[")[0].toLowerCase(Locale.ROOT);
+        if (type.contains(":")) type = data.split(":")[1];
+
+        switch (type) {
+            case "cobblestone_wall":
+            case "mossy_cobblestone_wall":
+            case "andesite_wall":
+            case "granite_wall":
+            case "diorite_wall":
+            case "stone_brick_wall":
+            case "mossy_stone_brick_wall":
+            case "sandstone_wall":
+            case "brick_wall":
+            case "red_sandstone_wall":
+            case "prismarine_wall":
+            case "nether_brick_wall":
+            case "red_nether_brick_wall":
+            case "end_stone_brick_wall":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    public static Map<String, String> convertBlockstateData(String data) {
+        if (data.contains("[")) {
+            data = data.split("\\[")[1].split("]")[0];
+        }
+
+        Map<String, String> mapData = new HashMap<>();
+
+        for (String s : data.split(",")) {
+            String key = s.split("=")[0];
+            String value = s.split("=")[1];
+            mapData.put(key, value);
+        }
+
+        return mapData;
+    }
+
+    public static String convertBlockstateData(Map<String, String> mapData) {
+        return mapData.keySet().stream().map(key -> key + "=" + mapData.get(key)).collect(Collectors.joining(","));
+    }
+
+    /**
+     * Returns the version of your server
+     *
+     * @return The server version
+     */
+    public static String getServerVersion() {
+        return Bukkit.getServer().getClass().getPackage().getName().substring(23);
+    }
+
+    public static String getCraftbukkitClass(String key) {
+        return "org.bukkit.craftbukkit." + getServerVersion() + "." + key;
     }
 }

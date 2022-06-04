@@ -1,10 +1,21 @@
 package com.strangeone101.platinumarenas;
 
+import com.google.common.collect.Maps;
+import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
+import com.strangeone101.platinumarenas.blockentity.Wrapper;
+import com.strangeone101.platinumarenas.blockentity.WrapperRegistry;
+import org.apache.commons.lang3.tuple.Pair;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.block.TileState;
 import org.bukkit.block.data.BlockData;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public class Section {
 
@@ -16,15 +27,15 @@ public class Section {
 
     private int ID;
 
+    private Map<Integer, Pair<Wrapper, Object>> NBT_CACHE = new HashMap<>();
+
     /**
      * The total block index of where the reset is up to. This variable is set
      * back to 0 after the reset pauses (this allows us to reset the arena over
      * time instead of in a single tick).
      */
     private int resetIndex = -1;
-    /**
-     * The index of where the reset is currently up to in the blockTypes variable
-     */
+
     private int resetTypeIndex = 0;
     /**
      * The block number the reset is currently on in the blockAmounts variable. Will be between 0 and
@@ -34,6 +45,9 @@ public class Section {
 
     private int maxResetPerTick = 0;
 
+    /**
+     * The index of where the reset is currently up to in the blockTypes variable
+     */
     private int index;
     private int locationIndex;
     private int positionIndex;
@@ -47,12 +61,17 @@ public class Section {
     private boolean dirty;
 
     Section(Arena parent, int ID, Location start, Location end, short[] blockTypes, short[] blockAmounts) {
+        this(parent, ID, start, end, blockTypes, blockAmounts, Maps.newHashMapWithExpectedSize(0));
+    }
+
+    Section(Arena parent, int ID, Location start, Location end, short[] blockTypes, short[] blockAmounts, Map<Integer, Pair<Wrapper, Object>> nbt) {
         this.blockAmounts = blockAmounts;
         this.blockTypes = blockTypes;
         this.parent = parent;
         this.start = start;
         this.end = end;
         this.ID = ID;
+        this.NBT_CACHE = nbt;
     }
 
     public boolean isResseting() {
@@ -103,16 +122,40 @@ public class Section {
 
             while (positionIndex < amount)
             {
-                Location offset = Arena.getLocationAtIndex(w, h, l, getStart().getWorld(), locationIndex++);
+                Location offset = Arena.getLocationAtIndex(w, h, l, getStart().getWorld(), locationIndex);
 
                 Block block = getStart().add(offset).getBlock();
                 getStart().subtract(offset);
 
                 block.setBlockData(data, false);
 
+                //Custom NBT on blocks
+                if (NBT_CACHE.containsKey(locationIndex)) { //If the NBT cache has this location
+                    if (!(block.getState() instanceof TileState)) { //If the placed block doesn't have NBT somehow???
+                        PlatinumArenas.INSTANCE.getLogger().warning("Tried to place NBT at block " + block.toString() + " but can't (no TileState)");
+                    } else {
+                        Pair<Wrapper, Object> nbtPair = NBT_CACHE.get(locationIndex);
+                        Wrapper wrapper = nbtPair.getKey();
+                        Object cache = nbtPair.getRight();
+
+                        if (!wrapper.getTileClass().isAssignableFrom(block.getState().getClass())) { //If the blocktype doesnt match
+                            PlatinumArenas.INSTANCE.getLogger().warning("Tried to place NBT at block " + block.toString() + " but can't (TileState type mismatch)");
+                            PlatinumArenas.INSTANCE.getLogger().warning("Block '" + block.getState().getClass().getName() + "', wrapper '" + wrapper.getTileClass().getName() + "'");
+                        } else {
+                            try {
+                                wrapper.place((TileState) block.getState(), cache);
+                            } catch (Exception e) {
+                                PlatinumArenas.INSTANCE.getLogger().warning("Tried to place NBT at block " + block.toString() + " and failed");
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }
+
                 count++;
                 positionIndex++;
                 blocksResetThisTick++;
+                locationIndex++;
 
                 if (max > 0 && count > max)
                 {
@@ -224,6 +267,41 @@ public class Section {
 
     protected short[] getBlockTypes() {
         return blockTypes;
+    }
+
+    protected byte[] getNBTData() {
+        Map<Wrapper, Map<Integer, Object>> wrapperTypes = new HashMap<>();
+
+        for (Integer index : NBT_CACHE.keySet()) {
+            Pair<Wrapper, Object> pair = NBT_CACHE.get(index);
+
+            if (!wrapperTypes.containsKey(pair.getKey())) {
+                wrapperTypes.put(pair.getKey(), new HashMap<>());
+            }
+
+            wrapperTypes.get(pair.getKey()).put(index, pair.getRight());
+        }
+
+        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+
+        out.writeByte(wrapperTypes.size()); //First byte is how many wrapper types
+
+        for (Wrapper wrapper : wrapperTypes.keySet()) {
+            out.writeInt(WrapperRegistry.getId(wrapper)); //Write the ID
+            out.writeInt(wrapperTypes.get(wrapper).size()); //The amount of NBT blocks to save for this type
+
+            for (Integer index : wrapperTypes.get(wrapper).keySet()) {
+                Object cache = wrapperTypes.get(wrapper).get(index);
+
+                byte[] bytes = wrapper.write(cache);
+
+                out.writeInt(index); //Write the index for this object
+                out.writeInt(bytes.length); //Write the length of the cache bytes
+                out.write(bytes); //Write all the bytes
+            }
+        }
+
+        return out.toByteArray();
     }
 
     @Override

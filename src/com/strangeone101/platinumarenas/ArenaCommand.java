@@ -6,6 +6,7 @@ import com.strangeone101.platinumarenas.commands.ConfirmCommand;
 import com.strangeone101.platinumarenas.commands.CreateCommand;
 import com.strangeone101.platinumarenas.commands.DebugCommand;
 import com.strangeone101.platinumarenas.commands.DeleteCommand;
+import com.strangeone101.platinumarenas.commands.InfoCommand;
 import com.strangeone101.platinumarenas.commands.ListCommand;
 import com.strangeone101.platinumarenas.commands.ResetCommand;
 import org.bukkit.ChatColor;
@@ -126,6 +127,7 @@ public abstract class ArenaCommand {
         subcommands.put("remove", new DeleteCommand());
         subcommands.put("confirm", new ConfirmCommand());
         subcommands.put("cancel", new CancelCommand());
+        subcommands.put("info", new InfoCommand());
         subcommands.put("debug", new DebugCommand());
     }
 }

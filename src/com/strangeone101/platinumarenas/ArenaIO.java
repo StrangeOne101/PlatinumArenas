@@ -1,10 +1,16 @@
 package com.strangeone101.platinumarenas;
 
 import com.google.common.base.Ascii;
+import com.google.common.collect.Maps;
 import com.google.common.primitives.Primitives;
+import com.strangeone101.platinumarenas.blockentity.Wrapper;
+import com.strangeone101.platinumarenas.blockentity.WrapperRegistry;
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -23,7 +29,10 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -34,7 +43,7 @@ public class ArenaIO {
     private static final byte KEY_SPLIT = '\u0003';
     private static final byte ARENASECTION_SPLIT = '\u0004';
 
-    private static final int FILE_VERSION = 3;
+    public static final int FILE_VERSION = 4;
 
     /**
      * Saves an arena to disk.
@@ -58,7 +67,8 @@ public class ArenaIO {
 
             //HEADER SECTION
             String header = FILE_VERSION + "," + arena.getName() + "," + l.getWorld().getName() + "," + l.getBlockX() + "," + l.getBlockY() + "," + l.getBlockZ() + "," +
-                    l2.getBlockX() + "," + l2.getBlockY() + "," + l2.getBlockZ() + "," + arena.getCreator().toString() + "," + Bukkit.getVersion().split("-", 2)[0];
+                    l2.getBlockX() + "," + l2.getBlockY() + "," + l2.getBlockZ() + "," + arena.getCreator().toString() + "," + PlatinumArenas.INSTANCE.getMCVersion()
+                    + "," + arena.getCreationTime();
             byte[] headerBytes = header.getBytes(StandardCharsets.US_ASCII);
 
             //BLOCKDATA KEY SECTION
@@ -87,8 +97,11 @@ public class ArenaIO {
             for (int s = 0; s < arena.getSections().size(); s++) {
                 Section section = arena.getSections().get(s);
 
+                byte[] nbtBytes = section.getNBTData();
+
                 //7 ints (2x XYZ coords + size of the block types) + block types and amounts in bytes (2 shorts = 4 bytes))
-                ByteBuffer ib = ByteBuffer.allocate((7 * 4) + (section.getBlockAmounts().length * 4));
+                //Since version 4, we have 1 byte for NBT tile state types, and the length of the data as well
+                ByteBuffer ib = ByteBuffer.allocate((7 * 4) + (section.getBlockAmounts().length * 4) + 1 + nbtBytes.length);
 
                 ib.putInt(section.getStart().getBlockX());
                 ib.putInt(section.getStart().getBlockY());
@@ -97,7 +110,11 @@ public class ArenaIO {
                 ib.putInt(section.getEnd().getBlockY());
                 ib.putInt(section.getEnd().getBlockZ());
 
-                ib.putInt(section.getBlockTypes().length * 2); //Amount of data to write
+                ib.putInt(section.getBlockTypes().length * 2); //Amount of block data to write
+
+                //ib.put((byte)nbtBytes.length); //How many NBT tile entity types we have
+
+                for(int i = 0; i < nbtBytes.length; i++) ib.put(nbtBytes[i]); //Write the NBT
 
                 for (int i = 0; i < section.getBlockAmounts().length; i++) {
                     ib.putShort(section.getBlockAmounts()[i]);
@@ -106,10 +123,10 @@ public class ArenaIO {
 
                 byteStream.write(ib.array());
 
-                if (s < arena.getSections().size() - 1) { //If there is more sections to go, put the splitter
+                //Don't write the arena section split as of version 4
+                /*if (s < arena.getSections().size() - 1) { //If there is more sections to go, put the splitter
                     byteStream.write(new byte[] {0x00, 0x00, 0x00, ARENASECTION_SPLIT});
-                }
-
+                }*/
             }
 
            /* short amount = 1;
@@ -142,6 +159,8 @@ public class ArenaIO {
                 blockByteBuffer.putShort(s);
             }*/
 
+
+
             byte[] blockBytes = byteStream.toByteArray();
 
             //Combine all the different sections together into a single byte array to write to file
@@ -151,6 +170,10 @@ public class ArenaIO {
             totalBytes = ArrayUtils.addAll(totalBytes, keyBytes);
             totalBytes = ArrayUtils.add(totalBytes, SECTION_SPLIT);
             totalBytes = ArrayUtils.addAll(totalBytes, blockBytes);
+
+            if (file.getName().toLowerCase(Locale.ROOT).endsWith(".datc")) {
+                totalBytes = Util.compress(totalBytes);
+            }
 
             stream.write(totalBytes);
             stream.close();
@@ -172,8 +195,11 @@ public class ArenaIO {
      */
     public static Arena loadArena(File file) {
         try {
-
             byte[] readBytes = Files.readAllBytes(file.toPath());
+
+            if (file.getName().toLowerCase(Locale.ROOT).endsWith(".datc")) { //.datc is the compressed arena format
+                readBytes = Util.decompress(readBytes);
+            }
 
             //HEADER SECTION
             int firstSectionSplit = ArrayUtils.indexOf(readBytes, SECTION_SPLIT);
@@ -184,12 +210,15 @@ public class ArenaIO {
             Location corner1 = null;
             Location corner2 = null;
             UUID owner = PlatinumArenas.DEFAULT_OWNER;
-            int arenaMCVersion = getVersion("1.16.4");
-            int currentMCVersion = getVersion(Bukkit.getVersion().split("-", 2)[0]);
+            long created = 0;
+            int arenaMCVersion = getVersion("1.15.2"); //The default for when the version isn't in the file
+            int currentMCVersion = getVersion(PlatinumArenas.INSTANCE.getMCVersion());
 
             int version = Integer.parseInt(headerString.split(",")[0]);
 
-
+            if (version >= 4) {
+                created = Long.parseLong(headerString.split(",")[11]);
+            }
             if (version >= 3) {
                 arenaMCVersion = getVersion(headerString.split(",")[10]);
             }
@@ -206,8 +235,20 @@ public class ArenaIO {
                 int y2 = Integer.parseInt(headerString.split(",")[7]);
                 int z2 = Integer.parseInt(headerString.split(",")[8]);
 
-                corner1 = new Location(Bukkit.getWorld(world), x1, y1, z1);
-                corner2 = new Location(Bukkit.getWorld(world), x2, y2, z2);
+                World realWorld = Bukkit.getWorld(world);
+
+                if (realWorld == null) {
+                    PlatinumArenas.INSTANCE.getLogger().warning("Could not locate world \"" + world + "\" for arena \"" + name + "\"! Using default world");
+                    realWorld = Bukkit.getWorlds().get(0);
+                }
+
+                corner1 = new Location(realWorld, x1, y1, z1);
+                corner2 = new Location(realWorld, x2, y2, z2);
+            }
+
+            if (Arena.arenas.containsKey(name)) {
+                PlatinumArenas.INSTANCE.getLogger().warning("Tried to load arena \"" + name + "\" twice! Did you duplicate the file?");
+                return null;
             }
 
             //KEY SECTION
@@ -239,38 +280,55 @@ public class ArenaIO {
                 String material = blockData.split("\\[")[0];
 
                 //Since Mojang are amazing and rename blocks (WHY?????)
-                if (material.equalsIgnoreCase("grass_path")) {
-                    if (arenaMCVersion < 1170 && currentMCVersion >= 1170) { //Was renamed in 1.17
-                        blockData = "dirt_path";
+                if (arenaMCVersion < 1170 && currentMCVersion >= 1170 && material.equalsIgnoreCase("minecraft:grass_path")) { //Was renamed in 1.17
+                    blockData = "minecraft:dirt_path";
+                } else if (arenaMCVersion < 1170 && currentMCVersion >= 1170 && material.equalsIgnoreCase("minecraft:cauldron")) {
+                    if (blockData.contains("[")) { //Contains the water level. If it doesn't, then it's empty
+                        blockData = "minecraft:water_cauldron" + blockData.split("\\[", 2)[1];
                     }
+                } else if (arenaMCVersion < 1150 && currentMCVersion >= 1150 && material.equalsIgnoreCase("minecraft:beetroots")) { //Beetroot had their age halved
+                    if (blockData.contains("[")) { //Contains the age
+                        Pattern pattern = Pattern.compile("minecraft:beetroots\\[age=(\\d)\\]");
+                        Matcher matcher = pattern.matcher(blockData);
+                        int age = Integer.parseInt(matcher.group());
+                        int newAge = 0;
+                        if (age == 7) newAge = 3;
+                        else if (age >= 4 && age <= 6) newAge = 2;
+                        else if (age >= 1 && age <= 3) newAge = 1;
+                        blockData = "minecraft:beetroots[age=" + newAge + "]";
+                    }
+                } else if (arenaMCVersion < 1160 && currentMCVersion >= 1160 && Util.isPre116Wall(material)) { //Convert old walls
+                    HashMap<String, String> mapData = (HashMap<String, String>) Util.convertBlockstateData(blockData);
+                    Map<String, String> mapDataClone = (Map<String, String>) mapData.clone();
+                    mapDataClone.remove("up");
+                    mapDataClone.remove("waterlogged");
+                    mapDataClone.entrySet().stream().forEach((entry) -> {
+                        if (entry.getValue().equalsIgnoreCase("true")) mapData.put(entry.getKey(), "low");
+                        else mapData.put(entry.getKey(), "none");
+                    });
+
+                    blockData = material + "[" + Util.convertBlockstateData(mapData) + "]";
                 }
-                else if (material.equalsIgnoreCase("cauldron")) {
-                    if (arenaMCVersion < 1170 && currentMCVersion >= 1170) {
-                        if (blockData.contains("[")) { //Contains the water level. If it doesn't, then it's empty
-                            blockData = "water_cauldron" + blockData.split("\\[", 2)[1];
-                        }
-                    }
-                } else if (material.equalsIgnoreCase("beetroots")) { //Beetroot had their age halved
-                    if (arenaMCVersion < 1150 && currentMCVersion >= 1150) {
-                        if (blockData.contains("[")) { //Contains the age
-                            Pattern pattern = Pattern.compile("beetroots\\[age=(\\d)\\]");
-                            Matcher matcher = pattern.matcher(blockData);
-                            int age = Integer.parseInt(matcher.group());
-                            int newAge = 0;
-                            if (age == 7) newAge = 3;
-                            else if (age >= 4 && age <= 6) newAge = 2;
-                            else if (age >= 1 && age <= 3) newAge = 1;
-                            blockData = "beetroots[age=" + newAge + "]";
-                        }
-                    }
+                try {
+                    BlockData bukkitData = Bukkit.createBlockData(blockData);
+                    blockDataSet.add(bukkitData);
+                } catch (IllegalArgumentException e) {
+                    PlatinumArenas.INSTANCE.getLogger().severe("Failed to parse block data '" + blockData + "' for arena '" + name + "'!");
+                    blockDataSet.add(Bukkit.createBlockData(blockData.split("\\[")[0]));
                 }
-                BlockData bukkitData = Bukkit.createBlockData(blockData);
-                blockDataSet.add(bukkitData);
             }
 
             Arena arena = new Arena(name, corner1, corner2);
             arena.setCreator(owner);
-            arena.addKeys(blockDataSet);
+            arena.setCreationTime(created);
+            if (version >= 3) {
+                arena.setMcVersion(headerString.split(",")[10]);
+            } else {
+                arena.setMcVersion("Unknown");
+            }
+            arena.setFileVersion(version);
+
+            arena.setKeys(blockDataSet);
 
             //BLOCK SECTION
             //int blockSectionSplit = ArrayUtils.indexOf(readBytes, SECTION_SPLIT, keySectionSplit + 1);
@@ -302,6 +360,34 @@ public class ArenaIO {
                 Location end = new Location(corner1.getWorld(), x2, y2, z2);
                 int left = buffer.getInt();
 
+                Map<Integer, Pair<Wrapper, Object>> NBT = Maps.newHashMapWithExpectedSize(0);
+
+                if (version >= 4) { //Version 4 adds the basic NBT support
+                    NBT = new HashMap<>();
+
+                    byte differentTypes = buffer.get();
+                    for (int i = 0; i < differentTypes; i++) {
+                        int id = buffer.getInt();
+                        int amount = buffer.getInt(); //Get amount of blocks with NBT data for this ID in this section
+
+                        Wrapper wrapper = WrapperRegistry.getFromId(id); //Get wrapper from ID
+
+                        for (int j = 0; j < amount; j++) {
+                            int index = buffer.getInt(); //Block index in this section (location)
+
+                            int byteCount = buffer.getInt();
+                            byte[] bytes = new byte[byteCount];
+                            for (int k = 0; k < byteCount; k++) {
+                                bytes[k] = buffer.get();
+                            }
+
+                            Object cache = wrapper.read(bytes); //Convert bytes to object to store in memory
+
+                            NBT.put(index, new ImmutablePair<>(wrapper, cache));
+                        }
+                    }
+                }
+
                 short[] amounts = new short[left / 2];
                 short[] types = new short[left / 2];
 
@@ -310,11 +396,12 @@ public class ArenaIO {
                     types[i] = buffer.getShort();
                 }
 
-                Section section = new Section(arena, currentSection, start, end, types, amounts);
+                Section section = new Section(arena, currentSection, start, end, types, amounts, NBT);
                 arena.getSections().add(section);
                 currentSection++;
 
-                if (currentSection != sectionCount) {
+                //The arena section split is no longer added to arenas on version 4 or later
+                if (version < 4 && currentSection != sectionCount) {
                     buffer.getInt(); //Skip the arena section split
                 }
 
@@ -372,12 +459,10 @@ public class ArenaIO {
 
             return arena;
 
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (Exception e) {
+            PlatinumArenas.INSTANCE.getLogger().warning("Failed to load arena file \"" + file.getName() + "\"!");
             e.printStackTrace();
         }
-
 
         return null;  //unfinished
     }
@@ -412,7 +497,7 @@ public class ArenaIO {
      * @return The list of arenas
      */
     public static Collection<Arena> loadAllArenas() {
-        File folder = new File(PlatinumArenas.INSTANCE.getDataFolder(), "/Arenas");
+        File folder = new File(PlatinumArenas.INSTANCE.getDataFolder(), "Arenas");
         if (!folder.exists()) {
             folder.mkdirs();
         }
@@ -421,9 +506,10 @@ public class ArenaIO {
         long time = System.currentTimeMillis();
 
         for (File f : folder.listFiles()) {
-            if (f.getName().endsWith(".dat")) {
+            if (f.getName().toLowerCase(Locale.ROOT).endsWith(".dat") || f.getName().toLowerCase(Locale.ROOT).endsWith(".datc")) {
                 try {
                     Arena arena = ArenaIO.loadArena(f);
+                    if (arena == null) continue;
                     PlatinumArenas.INSTANCE.getLogger().info("Loaded arena \"" + arena.getName() + "\" from file " + f.getName());
                     Arena.arenas.put(arena.getName(), arena);
                 } catch (Exception e) {

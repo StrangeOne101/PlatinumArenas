@@ -28,6 +28,8 @@ public class ConfigManager {
     public static int RESET_UPDATE_INTERVAL = 10;
     public static float RESET_UPDATE_PERCENTAGE = 5F;
 
+    public static boolean ENABLE_COMPRESSION = true;
+
     private static YamlConfiguration config;
 
     public static boolean setup() {
@@ -55,6 +57,8 @@ public class ConfigManager {
 
             RESET_UPDATE_INTERVAL = config.getInt("ResetUpdate.Interval", RESET_UPDATE_INTERVAL);
             RESET_UPDATE_PERCENTAGE = (float)config.getDouble("ResetUpdate.Percent", RESET_UPDATE_PERCENTAGE);
+
+            ENABLE_COMPRESSION = !config.getBoolean("DisableCompression", !ENABLE_COMPRESSION);
 
             if (RESET_UPDATE_INTERVAL < 0) RESET_UPDATE_INTERVAL = 1;
             if (RESET_UPDATE_PERCENTAGE > 100) RESET_UPDATE_PERCENTAGE = 100F;

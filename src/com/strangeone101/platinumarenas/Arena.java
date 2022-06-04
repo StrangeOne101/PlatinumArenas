@@ -1,12 +1,17 @@
 package com.strangeone101.platinumarenas;
 
+import com.strangeone101.platinumarenas.blockentity.Wrapper;
+import com.strangeone101.platinumarenas.blockentity.WrapperRegistry;
 import com.strangeone101.platinumarenas.commands.DebugCommand;
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.TileState;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -23,6 +28,9 @@ public class Arena {
 
     private String name;
     private UUID creator;
+    private long created;
+    private String mcVersion = "(Unknown)";
+    private int fileVersion;
 
     private BlockData[] keys;
 
@@ -31,9 +39,6 @@ public class Arena {
 
     private boolean beingReset = false;
     private boolean cancelReset = false;
-
-    @Deprecated
-    private short[] blocks;
 
     private List<Section> sections = new ArrayList<>();
 
@@ -56,6 +61,7 @@ public class Arena {
             Material.AIR.createBlockData(),
             Material.DIRT.createBlockData(),
             Material.GRASS_BLOCK.createBlockData(),
+            Material.STONE.createBlockData()
         };
 
         int x1 = corner1.getBlockX();
@@ -92,39 +98,11 @@ public class Arena {
     }
 
     /**
-     * Merge two arenas together. This happens automatically when smaller temporary
-     * arenas are created and then merged back into one larger arena in order to
-     * prevent a lot of lag.
-     *
-     * @param keys The keyset
-     * @param blocks The blocks
+     * Add keys to the current list. Should be done when the arena is being created
+     * and the arena is being analyzed
+     * @param keys The keys
      */
-    @Deprecated
-    void merge(BlockData[] keys, short[] blocks) {
-        List<BlockData> keyList = new ArrayList<>(Arrays.asList(this.keys));
-        Map<Short, Short> corrections = new HashMap<Short, Short>();
-
-        //Loop through all the keys in the new keyset. Add them to the full keyset if they aren't in it already
-        for (int i = 0; i < keys.length; i++) {
-            if (!keyList.contains(keys[i])) {
-                keyList.add(keys[i]);
-                this.keys = (BlockData[]) keyList.toArray(); //Update the keys to feature this blockdata
-            }
-
-            //We are now storing the old block index of this key as well as the new one.
-            short newKeyIndex = (short) ArrayUtils.indexOf(this.keys, keys[i]);
-            corrections.put((short) i, newKeyIndex); //Store the old int value and the new one that it should change to
-        }
-
-        //Loop through all blocks and change their block index from one from the old keyset into the one from the new keyset
-        for (int b = 0; b < blocks.length; b++) {
-            blocks[b] = corrections.get(blocks[b]); //Get the old block index and set it to the one that exists in this keyset
-        }
-
-        this.blocks = ArrayUtils.addAll(this.blocks, blocks);
-    }
-
-    public void addKeys(Collection<BlockData> keys) {
+    protected void addKeys(Collection<BlockData> keys) {
         long time = System.currentTimeMillis();
         List<BlockData> keyList = new ArrayList<>(Arrays.asList(this.keys));
         for (BlockData data : keys) {
@@ -133,6 +111,14 @@ public class Arena {
 
         this.keys = keyList.toArray(new BlockData[keyList.size()]);
         //PlatinumArenas.INSTANCE.getLogger().info("Key took " + (System.currentTimeMillis() - time) + "ms");
+    }
+
+    /**
+     * When an arena is freshly loaded from a file, set the key list
+     * @param keys The keys to set
+     */
+    public void setKeys(Collection<BlockData> keys) {
+        this.keys = keys.toArray(new BlockData[keys.size()]);
     }
 
     public void reset(int resetSpeed, CommandSender sender) {
@@ -217,7 +203,7 @@ public class Arena {
         long t = System.nanoTime();
 
         //Update the user on the progress. Only check this every 5 ticks to reduce workload.
-        if (System.currentTimeMillis() > data.lastUpdate + ConfigManager.RESET_UPDATE_INTERVAL * 1000 && data.tick % 5 == 0) {
+        if (System.currentTimeMillis() > data.lastUpdate + ConfigManager.RESET_UPDATE_INTERVAL * 1000L && data.tick % 5 == 0) {
             double percentageDone = (double)data.totalBlocksReset / (double)data.totalBlocksToReset * 100;
 
             if (percentageDone > data.lastPerUpdate + ConfigManager.RESET_UPDATE_PERCENTAGE) {
@@ -348,7 +334,7 @@ public class Arena {
         String totalSize = NumberFormat.getInstance().format(width * length * height);
         PlatinumArenas.INSTANCE.getLogger().info("Creating new arena. Size is " + width + " x " + height + " x " + length + " and totals " + totalSize + " blocks.");
 
-        player.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Arena size is " + ChatColor.YELLOW + width + " x " + height + " x " + length + " " + ChatColor.GREEN + " and totals " + ChatColor.YELLOW + totalSize + " blocks.");
+        player.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Arena size is " + ChatColor.YELLOW + width + " x " + height + " x " + length + ChatColor.GREEN + " and totals " + ChatColor.YELLOW + totalSize + " blocks.");
         if (sectionsX * sectionsZ > 1) player.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " " + (sectionsX * sectionsZ) + " sections will be created.");
         player.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Now analyzing individual blocks... (This may take a while)");
 
@@ -356,7 +342,13 @@ public class Arena {
 
         Arena arena = new Arena(name, corner1, corner2);
 
+        arena.setCreationTime(System.currentTimeMillis());
+        arena.setCreator(player.getUniqueId());
+        arena.setMcVersion(PlatinumArenas.INSTANCE.getMCVersion()); //We have to set these values now so the arena can be used in the info command
+        arena.setFileVersion(ArenaIO.FILE_VERSION);
+
         CreationLoopinData data = new CreationLoopinData();
+
         data.arena = arena;
         data.sectionStarts = sectionStarts;
         data.sectionEnds = sectionEnds;
@@ -381,7 +373,8 @@ public class Arena {
                 }
 
                 Arena.arenas.put(arena.name, arena);
-                ArenaIO.saveArena(new File(PlatinumArenas.INSTANCE.getDataFolder(), "/Arenas/" + name + ".dat"), arena);
+                String extension = ConfigManager.ENABLE_COMPRESSION ? ".datc" : ".dat";
+                ArenaIO.saveArena(new File(PlatinumArenas.INSTANCE.getDataFolder(), "/Arenas/" + name + extension), arena);
 
                 if (player != null && player.isOnline()) {
                     player.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Done! The arena is now ready for use!");
@@ -407,10 +400,23 @@ public class Arena {
         if (isBeingReset()) cancelReset = true;
     }
 
-    /**
-     * Small class that contains all the data we need to carry over between ticks
-     * when resetting an arena.
-     */
+    public String getMcVersion() {
+        return mcVersion;
+    }
+
+    void setMcVersion(String mcVersion) {
+        this.mcVersion = mcVersion;
+    }
+
+    public int getFileVersion() {
+        return fileVersion;
+    }
+
+    void setFileVersion(int fileVersion) {
+        this.fileVersion = fileVersion;
+    }
+
+
     private static class CreationLoopinData {
         List<Section> sections;
         List<Location> sectionStarts, sectionEnds;
@@ -418,8 +424,13 @@ public class Arena {
         long lastUpdate;
         Arena arena;
         short[] blockAmounts, blockTypes = new short[0];
+        Map<Integer, Pair<Wrapper, Object>> NBT = new HashMap<>();
     }
 
+    /**
+     * Small class that contains all the data we need to carry over between ticks
+     * when resetting an arena.
+     */
     private static class ResetLoopinData {
         Map<Integer, Integer> sections = new HashMap<>();
         List<Integer> sectionIDs = new ArrayList<>(); //Having another list instead of making an array from the map each tick is faster
@@ -432,7 +443,7 @@ public class Arena {
         long calculateMicroseconds;
         long resetMicroseconds;
         long startTime;
-        long lastUpdate = System.currentTimeMillis() - (ConfigManager.RESET_UPDATE_INTERVAL / 2 * 1000);
+        long lastUpdate = System.currentTimeMillis() - (ConfigManager.RESET_UPDATE_INTERVAL / 2 * 1000L);
         float lastPerUpdate = 0F;
         int tick = 0;
         int totalBlocksReset = 0;
@@ -468,11 +479,12 @@ public class Arena {
             loc = start.clone().add(loc);
             if (data.index >= width * height * length) {
                 //PlatinumArenas.INSTANCE.getLogger().info("Debug3: We are at the end");
-                data.sections.add(new Section(data.arena, data.sections.size(), start, end, data.blockTypes, data.blockAmounts));
+                data.sections.add(new Section(data.arena, data.sections.size(), start, end, data.blockTypes, data.blockAmounts, data.NBT));
                 data.blockAmounts = new short[0];
                 data.blockTypes = new short[0];
                 data.sectionStarts.remove(0);
                 data.sectionEnds.remove(0);
+                data.NBT = new HashMap<>();
                 if (keyList.size() > data.arena.keys.length) data.arena.addKeys(keyList);
 
                 if (data.sectionStarts.size() == 0) {
@@ -495,12 +507,12 @@ public class Arena {
                 //PlatinumArenas.INSTANCE.getLogger().info("Debug2: Adding " + loc.getBlock().getBlockData().getAsString() + " to keylist");
             }
 
-            short index = (short)keyList.indexOf(loc.getBlock().getBlockData());
+            short blockKeyIndex = (short)keyList.indexOf(loc.getBlock().getBlockData());
             //PlatinumArenas.INSTANCE.getLogger().info("Debug6: Index of " + loc.getBlock().getBlockData().getAsString() + " is " + index + "(" + keyList.indexOf(loc.getBlock().getBlockData()) + ")");
 
             if (data.blockTypes.length == 0) {
                 data.blockAmounts = new short[] {1};
-                data.blockTypes = new short[] {index};
+                data.blockTypes = new short[] {blockKeyIndex};
                 //PlatinumArenas.INSTANCE.getLogger().info("Debug4: Creating array thingies");
                 if (keyList.size() > data.arena.keys.length) data.arena.addKeys(keyList);
                 data.totalBlocks++;
@@ -509,7 +521,7 @@ public class Arena {
                 continue;
             }
 
-            if (data.blockTypes[data.blockTypes.length - 1] == index) { //If the last block recorded is the same type
+            if (data.blockTypes[data.blockTypes.length - 1] == blockKeyIndex) { //If the last block recorded is the same type
                 data.blockAmounts[data.blockAmounts.length - 1] = (short) (data.blockAmounts[data.blockAmounts.length - 1] + 1);
                 //PlatinumArenas.INSTANCE.getLogger().info("Debug5: Same type. Amount is now " + data.blockAmounts[data.blockAmounts.length - 1]);
                 if (keyList.size() > data.arena.keys.length) data.arena.addKeys(keyList);
@@ -519,8 +531,16 @@ public class Arena {
                 continue;
             }
 
+            Wrapper wrapper = WrapperRegistry.getFromMaterial(loc.getBlock().getType());
+            //Test if the block has custom NBT
+            if (wrapper != null && loc.getBlock().getState() instanceof TileState && !wrapper.isBlank((TileState) loc.getBlock().getState())) {
+                Object cache = wrapper.cache((TileState) loc.getBlock().getState()); //Cache the NBT from the tilestate
+
+                data.NBT.put(data.index, new ImmutablePair<>(wrapper, cache)); //Store in the section that the current block has the current NBT
+            }
+
             data.blockAmounts = ArrayUtils.add(data.blockAmounts, (short)1);
-            data.blockTypes = ArrayUtils.add(data.blockTypes, index);
+            data.blockTypes = ArrayUtils.add(data.blockTypes, blockKeyIndex);
 
             //TODO Preventive measures need to be put in place to stop the key list rising above the max short
 
@@ -568,10 +588,6 @@ public class Arena {
         return keys;
     }
 
-    public short[] getBlocks() {
-        return blocks;
-    }
-
     public String getName() {
         return name;
     }
@@ -588,8 +604,16 @@ public class Arena {
         return creator;
     }
 
-    public void setCreator(UUID creator) {
+    public long getCreationTime() {
+        return created;
+    }
+
+    void setCreator(UUID creator) {
         this.creator = creator;
+    }
+
+    void setCreationTime(long time) {
+        this.created = time;
     }
 
     /**
@@ -639,6 +663,17 @@ public class Arena {
 
     public List<Section> getSections() {
         return sections;
+    }
+
+    public String getStringSize() {
+        int area = getWidth() * getHeight() * getLength();
+        String size = area < 2000 ? "Very Small" : (area < 10_000 ? "Small" : (area < 50_000 ? "Medium" : (area < 200_000 ? "Large" : (area < 2_000_000 ? "Very Large" : ("Insane")))));
+
+        return size;
+    }
+
+    public boolean hasOwner() {
+        return !creator.equals(PlatinumArenas.DEFAULT_OWNER);
     }
 
     @Override

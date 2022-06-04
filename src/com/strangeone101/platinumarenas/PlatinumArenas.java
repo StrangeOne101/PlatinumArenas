@@ -1,5 +1,6 @@
 package com.strangeone101.platinumarenas;
 
+import com.strangeone101.platinumarenas.blockentity.WrapperRegistry;
 import com.strangeone101.platinumarenas.region.DefaultRegionSelection;
 import com.strangeone101.platinumarenas.region.IRegionSelection;
 import com.strangeone101.platinumarenas.region.WorldEditRegionSelection;
@@ -28,10 +29,7 @@ public class PlatinumArenas extends JavaPlugin {
     public void onEnable() {
         INSTANCE = this;
 
-        getLogger().info("PlatinumArenas Enabled!");
-        getLogger().info("Loading arenas... this will be done async.");
-        async(ArenaIO::loadAllArenas);
-
+        WrapperRegistry.registerAll();
 
         ArenaCommand.createCommands();
         getCommand("platinumarenas").setExecutor(ArenaCommand.getCommandExecutor());
@@ -51,6 +49,11 @@ public class PlatinumArenas extends JavaPlugin {
         } else {
             regionSelection = new DefaultRegionSelection();
         }
+
+        getLogger().info("PlatinumArenas Enabled!");
+        getLogger().info("Loading arenas... this will be done async.");
+
+        async(ArenaIO::loadAllArenas);
     }
 
     /**
@@ -80,5 +83,9 @@ public class PlatinumArenas extends JavaPlugin {
      */
     public boolean isReady() {
         return ready;
+    }
+
+    public String getMCVersion() {
+        return Bukkit.getBukkitVersion().split("-", 2)[0];
     }
 }

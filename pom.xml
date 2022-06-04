@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.strangeone101</groupId>
     <artifactId>PlatinumArenas</artifactId>
-    <version>0.6</version>
+    <version>0.7</version>
     <repositories>
         <repository>
             <id>bungeecord-repo</id>
@@ -86,7 +86,18 @@
                 </executions>
                 <configuration />
             </plugin>
-
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <mainClass>com.strangeone101.platinumarenas.DebugMain</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
     <dependencies>
@@ -95,6 +106,12 @@
             <artifactId>bungeecord-api</artifactId>
             <version>1.12-SNAPSHOT</version>
             <type>jar</type>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.mojang</groupId>
+            <artifactId>authlib</artifactId>
+            <version>1.5.25</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
