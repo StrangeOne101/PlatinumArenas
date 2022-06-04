@@ -143,7 +143,7 @@ public class Section {
                             PlatinumArenas.INSTANCE.getLogger().warning("Block '" + block.getState().getClass().getName() + "', wrapper '" + wrapper.getTileClass().getName() + "'");
                         } else {
                             try {
-                                wrapper.place((TileState) block.getState(), cache);
+                                wrapper.place((TileState) block.getState(), cache).update(); //The update part is important or else the tilestate won't change
                             } catch (Exception e) {
                                 PlatinumArenas.INSTANCE.getLogger().warning("Tried to place NBT at block " + block.toString() + " and failed");
                                 e.printStackTrace();

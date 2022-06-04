@@ -100,8 +100,8 @@ public class ArenaIO {
                 byte[] nbtBytes = section.getNBTData();
 
                 //7 ints (2x XYZ coords + size of the block types) + block types and amounts in bytes (2 shorts = 4 bytes))
-                //Since version 4, we have 1 byte for NBT tile state types, and the length of the data as well
-                ByteBuffer ib = ByteBuffer.allocate((7 * 4) + (section.getBlockAmounts().length * 4) + 1 + nbtBytes.length);
+                //Since version 4, we have the length of the NBT bytes as well.
+                ByteBuffer ib = ByteBuffer.allocate((7 * 4) + (section.getBlockAmounts().length * 4) + nbtBytes.length);
 
                 ib.putInt(section.getStart().getBlockX());
                 ib.putInt(section.getStart().getBlockY());
