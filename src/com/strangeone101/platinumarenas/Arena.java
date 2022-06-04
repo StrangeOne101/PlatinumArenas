@@ -37,7 +37,7 @@ public class Arena {
     private Location corner1;
     private Location corner2;
 
-    private boolean beingReset = false;
+    private ResetLoopinData currentReset = null;
     private boolean cancelReset = false;
 
     private List<Section> sections = new ArrayList<>();
@@ -124,7 +124,6 @@ public class Arena {
     public void reset(int resetSpeed, CommandSender sender) {
         if (getSections().size() == 0) return;
 
-        this.beingReset = true;
 
         ResetLoopinData data = new ResetLoopinData();
         data.maxBlocksThisTick = resetSpeed;
@@ -139,6 +138,8 @@ public class Arena {
             data.sectionIDs.add(s.getID());
         }
 
+        this.currentReset = data;
+
         loopyReset(data, sender);
     }
 
@@ -148,7 +149,7 @@ public class Arena {
      */
     private void loopyReset(ResetLoopinData data, CommandSender sender) {
         if (cancelReset) {
-            beingReset = false;
+            this.currentReset = null;
             cancelReset = false;
 
             for (Section section : sections) {
@@ -218,7 +219,7 @@ public class Arena {
         data.calculateMicroseconds += System.nanoTime() - t;
 
         if (data.sections.size() == 0) {
-            beingReset = false;
+            this.currentReset = null;
 
             double resetMs = (double)(data.resetMicroseconds / 1000) / 1000;
             double calcMs = (double)(data.calculateMicroseconds / 1000) / 1000;
@@ -389,7 +390,7 @@ public class Arena {
     }
 
     public boolean isBeingReset() {
-        return beingReset;
+        return this.currentReset != null;
     }
 
     public boolean isBeingCanceled() {
@@ -414,6 +415,20 @@ public class Arena {
 
     void setFileVersion(int fileVersion) {
         this.fileVersion = fileVersion;
+    }
+
+    public void setResetSpeed(int speed) {
+        if (this.currentReset != null) {
+            this.currentReset.speed = speed;
+            this.currentReset.maxBlocksThisTick = speed;
+
+            for (Section s : getSections()) {
+                int sectionAmount = (int)((double)speed / (double)getTotalBlocks() * (double)s.getTotalBlocks());
+                if (sectionAmount <= 0) sectionAmount = 1; //Do AT LEAST one block per tick in each section
+                this.currentReset.sections.put(s.getID(), sectionAmount); //Store the amount of blocks each section should reset per tick
+                this.currentReset.sectionIDs.add(s.getID());
+            }
+        }
     }
 
 

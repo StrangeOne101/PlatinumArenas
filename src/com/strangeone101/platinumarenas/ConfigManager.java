@@ -30,6 +30,8 @@ public class ConfigManager {
 
     public static boolean ENABLE_COMPRESSION = true;
 
+    public static String TELEPORT_COMMAND = "/tp <x> <y> <z>";
+
     private static YamlConfiguration config;
 
     public static boolean setup() {
@@ -59,6 +61,8 @@ public class ConfigManager {
             RESET_UPDATE_PERCENTAGE = (float)config.getDouble("ResetUpdate.Percent", RESET_UPDATE_PERCENTAGE);
 
             ENABLE_COMPRESSION = !config.getBoolean("DisableCompression", !ENABLE_COMPRESSION);
+
+            TELEPORT_COMMAND = config.getString("TeleportCommandSuggestion", TELEPORT_COMMAND);
 
             if (RESET_UPDATE_INTERVAL < 0) RESET_UPDATE_INTERVAL = 1;
             if (RESET_UPDATE_PERCENTAGE > 100) RESET_UPDATE_PERCENTAGE = 100F;

@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 public class ResetCommand extends ArenaCommand {
 
@@ -42,10 +43,10 @@ public class ResetCommand extends ArenaCommand {
             return;
         }
 
-        if (Arena.arenas.get(args.get(0).toLowerCase()).isBeingReset()) {
+        /*if (Arena.arenas.get(args.get(0).toLowerCase()).isBeingReset()) {
             sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " That arena is currently being reset!");
             return;
-        }
+        }*/
 
         ResetSpeed speed = ResetSpeed.NORMAL;
         if (args.size() >= 2) {
@@ -76,6 +77,12 @@ public class ResetCommand extends ArenaCommand {
     }
 
     private void resetArena(Arena arena, ResetSpeed speed, CommandSender sender) {
+        if (arena.isBeingReset()) {
+            arena.setResetSpeed(speed.getAmount() / 20);
+            sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Changing arena reset speed to \"" + speed.name().replace("_", " ").toLowerCase(Locale.ROOT) + "\"!");
+            return;
+        }
+
         sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Resetting arena \"" + arena.getName() + "\"!");
         long time = System.currentTimeMillis();
         arena.reset(speed.getAmount() / 20, sender);

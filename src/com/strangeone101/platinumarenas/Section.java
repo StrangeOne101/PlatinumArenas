@@ -11,8 +11,10 @@ import org.bukkit.block.Block;
 import org.bukkit.block.TileState;
 import org.bukkit.block.data.BlockData;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -270,7 +272,7 @@ public class Section {
     }
 
     protected byte[] getNBTData() {
-        Map<Wrapper, Map<Integer, Object>> wrapperTypes = new HashMap<>();
+        Map<Wrapper, Map<Object, List<Integer>>> wrapperTypes = new HashMap<>();
 
         for (Integer index : NBT_CACHE.keySet()) {
             Pair<Wrapper, Object> pair = NBT_CACHE.get(index);
@@ -279,7 +281,11 @@ public class Section {
                 wrapperTypes.put(pair.getKey(), new HashMap<>());
             }
 
-            wrapperTypes.get(pair.getKey()).put(index, pair.getRight());
+            if (!wrapperTypes.get(pair.getLeft()).containsKey(pair.getRight())) {
+                wrapperTypes.get(pair.getLeft()).put(pair.getRight(), new ArrayList<>());
+            }
+
+            wrapperTypes.get(pair.getLeft()).get(pair.getRight()).add(index);
         }
 
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
@@ -287,21 +293,41 @@ public class Section {
         out.writeByte(wrapperTypes.size()); //First byte is how many wrapper types
 
         for (Wrapper wrapper : wrapperTypes.keySet()) {
-            out.writeInt(WrapperRegistry.getId(wrapper)); //Write the ID
-            out.writeInt(wrapperTypes.get(wrapper).size()); //The amount of NBT blocks to save for this type
+            out.writeByte(WrapperRegistry.getId(wrapper));   //Write the ID
+            out.writeShort(wrapperTypes.get(wrapper).size()); //The amount of NBT blocks to save for this type
 
-            for (Integer index : wrapperTypes.get(wrapper).keySet()) {
-                Object cache = wrapperTypes.get(wrapper).get(index);
+            for (Object cache : wrapperTypes.get(wrapper).keySet()) {
+                List<Integer> indexes = wrapperTypes.get(wrapper).get(cache);
+                int amountOfIndexes = indexes.size();
 
-                byte[] bytes = wrapper.write(cache);
+                //We do this in 127 lots because we write as a byte how many indexes use this object.
+                //If there is more than 127 indexes for this object, we will just repeat the entire thing
+                //again.
+                do {
+                    byte amountOfIndexesAsByte = (byte) (amountOfIndexes % 127);
 
-                out.writeInt(index); //Write the index for this object
-                out.writeInt(bytes.length); //Write the length of the cache bytes
-                out.write(bytes); //Write all the bytes
+                    out.writeByte(amountOfIndexesAsByte); //How many indexes use this object (in this iteration, at least)
+
+                    do {
+                        out.writeInt(indexes.get(0)); //Write an index
+                        indexes.remove(0);      //Remove it from the list
+                        amountOfIndexesAsByte--;
+                    } while (amountOfIndexesAsByte > 0);
+
+                    byte[] cacheByes = wrapper.write(cache); //Convert the cache object to bytes after we have written all the indexes
+                    out.writeInt(cacheByes.length); //Write the length of the data, so we know how far to read it later on
+                    out.write(cacheByes);
+
+                    amountOfIndexes -= 127; //It's fine if it goes negative. Negative will end the loop
+                } while (amountOfIndexes > 127);
             }
         }
 
         return out.toByteArray();
+    }
+
+    public Map<Integer, Pair<Wrapper, Object>> getNBTCache() {
+        return NBT_CACHE;
     }
 
     @Override

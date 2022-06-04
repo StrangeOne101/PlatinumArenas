@@ -23,6 +23,7 @@ permissions:
          platinumarenas.border: true
          platinumarenas.remove: true
          platinumarenas.debug: true
+         platinumarenas.info: true
       description: Use the platinumarenas command
    platinumarenas.reset.instant:
       description: Reset arenas instantly

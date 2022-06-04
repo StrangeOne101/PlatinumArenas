@@ -3,6 +3,7 @@ package com.strangeone101.platinumarenas.commands;
 import com.strangeone101.platinumarenas.Arena;
 import com.strangeone101.platinumarenas.ArenaCommand;
 import com.strangeone101.platinumarenas.ArenaIO;
+import com.strangeone101.platinumarenas.ConfigManager;
 import com.strangeone101.platinumarenas.PlatinumArenas;
 import com.strangeone101.platinumarenas.Util;
 import net.md_5.bungee.api.chat.BaseComponent;
@@ -59,7 +60,7 @@ public class ListCommand extends ArenaCommand {
                 s = s + "\n\n" + ChatColor.RED + "This arena was made with an older\n" + ChatColor.RED + "version of PlatinumArenas.";
             }
             arenaComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, TextComponent.fromLegacyText(s)));
-            arenaComponent.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tp " + x + " " + y + " " + z));
+            arenaComponent.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, getTeleport(arena, sender)));
 
             arenas.add(arenaComponent);
         }
@@ -83,5 +84,17 @@ public class ListCommand extends ArenaCommand {
         if (page + 1 <= arenas.size() / 10 + 1) { //If there is a next page
             sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.YELLOW + " To view the next page, type /arena list " + (page + 1));
         }
+    }
+
+    public static String getTeleport(Arena arena, CommandSender sender) {
+        int x = arena.getCorner1().getBlockX() + (arena.getWidth() / 2);
+        int y = arena.getCorner1().getBlockY() + (arena.getHeight() / 2);
+        int z = arena.getCorner1().getBlockZ() + (arena.getLength() / 2);
+
+        return ConfigManager.TELEPORT_COMMAND.replace("<x>", x + "")
+                .replace("<y>", y + "")
+                .replace("<z>", z + "")
+                .replace("<player>", sender.getName())
+                .replace("<world>", arena.getCorner1().getWorld().getName());
     }
 }

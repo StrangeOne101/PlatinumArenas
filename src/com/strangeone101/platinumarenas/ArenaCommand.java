@@ -8,6 +8,7 @@ import com.strangeone101.platinumarenas.commands.DebugCommand;
 import com.strangeone101.platinumarenas.commands.DeleteCommand;
 import com.strangeone101.platinumarenas.commands.InfoCommand;
 import com.strangeone101.platinumarenas.commands.ListCommand;
+import com.strangeone101.platinumarenas.commands.ReloadCommand;
 import com.strangeone101.platinumarenas.commands.ResetCommand;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -104,7 +105,6 @@ public abstract class ArenaCommand {
             if (args.length > 1) {
                 if (subcommands.containsKey(args[0].toLowerCase())) {
                     List<String> listArgs = new ArrayList<>(Arrays.asList(Arrays.copyOfRange(args, 1, args.length)));
-                    //if (listArgs.size() > 0 && listArgs.get(listArgs.size() - 1).equalsIgnoreCase("")) listArgs.remove(listArgs.size() - 1);
                     return subcommands.get(args[0].toLowerCase()).getTabCompletion(sender, listArgs).stream()
                             .filter(s -> s.startsWith(listArgs.get(listArgs.size() - 1))).collect(Collectors.toList());
                 }
@@ -128,6 +128,7 @@ public abstract class ArenaCommand {
         subcommands.put("confirm", new ConfirmCommand());
         subcommands.put("cancel", new CancelCommand());
         subcommands.put("info", new InfoCommand());
+        subcommands.put("reload", new ReloadCommand());
         subcommands.put("debug", new DebugCommand());
     }
 }

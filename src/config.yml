@@ -28,3 +28,7 @@ ResetUpdate:
 # You can convert existing arenas by double clicking the plugin jar file (so this must be done on
 # your PC)
 DisableCompression: false
+
+# The teleport command suggested to the user from clicking an arena in /arena list
+# Variables: player, x, y, z, world
+TeleportCommandSuggestion: '/tp <x> <y> <z>'

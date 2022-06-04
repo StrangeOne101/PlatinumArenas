@@ -365,25 +365,31 @@ public class ArenaIO {
                 if (version >= 4) { //Version 4 adds the basic NBT support
                     NBT = new HashMap<>();
 
-                    byte differentTypes = buffer.get();
+                    byte differentTypes = buffer.get(); //Get the amount of wrapper types in this section
                     for (int i = 0; i < differentTypes; i++) {
-                        int id = buffer.getInt();
-                        int amount = buffer.getInt(); //Get amount of blocks with NBT data for this ID in this section
+                        int id = buffer.get();
+                        int amount = buffer.getShort(); //Get amount of blocks with NBT data for this ID in this section
 
                         Wrapper wrapper = WrapperRegistry.getFromId(id); //Get wrapper from ID
 
                         for (int j = 0; j < amount; j++) {
-                            int index = buffer.getInt(); //Block index in this section (location)
 
-                            int byteCount = buffer.getInt();
-                            byte[] bytes = new byte[byteCount];
-                            for (int k = 0; k < byteCount; k++) {
-                                bytes[k] = buffer.get();
+                            byte amountOfIndexes = buffer.get(); //The amount of indexes
+                            int[] indexes = new int[amountOfIndexes];
+
+                            for (int k = 0; k < amountOfIndexes; k++) { //Get the list of indexes
+                                indexes[k] = buffer.getInt();
                             }
 
-                            Object cache = wrapper.read(bytes); //Convert bytes to object to store in memory
+                            int dataLength = buffer.getInt(); //Get the length of the data to cache
+                            byte[] dataBytes = new byte[dataLength];
+                            for (int k = 0; k < dataLength; k++) dataBytes[k] = buffer.get(); //Read it
 
-                            NBT.put(index, new ImmutablePair<>(wrapper, cache));
+                            Object cache = wrapper.read(dataBytes); //Convert bytes to object to store in memory
+
+                            for (int index : indexes) {
+                                NBT.put(index, new ImmutablePair<>(wrapper, cache));
+                            }
                         }
                     }
                 }

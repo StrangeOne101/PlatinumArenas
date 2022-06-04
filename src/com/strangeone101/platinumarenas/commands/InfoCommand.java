@@ -5,6 +5,7 @@ import com.strangeone101.platinumarenas.ArenaCommand;
 import com.strangeone101.platinumarenas.ArenaIO;
 import com.strangeone101.platinumarenas.ConfigManager;
 import com.strangeone101.platinumarenas.PlatinumArenas;
+import com.strangeone101.platinumarenas.Section;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
@@ -20,11 +21,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 public class InfoCommand extends ArenaCommand {
 
     public InfoCommand() {
-        super("info", "Read infomation about an arena", "/arena info <arena>", new String[] {"display"});
+        super("info", "Read information about an arena", "/arena info <arena>", new String[] {"display"});
     }
 
     @Override
@@ -90,6 +92,7 @@ public class InfoCommand extends ArenaCommand {
                 + (arena.getFileVersion() == ArenaIO.FILE_VERSION ? " (LATEST)" : " (Latest is " + (ArenaIO.FILE_VERSION) + ")");
         s = s + "\n" + ChatColor.YELLOW + "Sections: " + ChatColor.GRAY + arena.getSections().size();
         s = s + "\n" + ChatColor.YELLOW + "Block Types: " + ChatColor.GRAY + arena.getKeys().length;
+        s = s + "\n" + ChatColor.YELLOW + "Blocks with NBT: " + ChatColor.GRAY + arena.getSections().stream().map(Section::getNBTCache).map(Map::size).count();
 
         for (String line : s.split("\n")) {
             sender.sendMessage(PlatinumArenas.PREFIX + " " + line);
