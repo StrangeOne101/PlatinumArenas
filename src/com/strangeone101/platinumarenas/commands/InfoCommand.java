@@ -92,7 +92,7 @@ public class InfoCommand extends ArenaCommand {
                 + (arena.getFileVersion() == ArenaIO.FILE_VERSION ? " (LATEST)" : " (Latest is " + (ArenaIO.FILE_VERSION) + ")");
         s = s + "\n" + ChatColor.YELLOW + "Sections: " + ChatColor.GRAY + arena.getSections().size();
         s = s + "\n" + ChatColor.YELLOW + "Block Types: " + ChatColor.GRAY + arena.getKeys().length;
-        s = s + "\n" + ChatColor.YELLOW + "Blocks with NBT: " + ChatColor.GRAY + arena.getSections().stream().map(Section::getNBTCache).map(Map::size).count();
+        s = s + "\n" + ChatColor.YELLOW + "Blocks with NBT: " + ChatColor.GRAY + arena.getSections().stream().map(Section::getNBTCache).mapToInt(Map::size).sum();
 
         for (String line : s.split("\n")) {
             sender.sendMessage(PlatinumArenas.PREFIX + " " + line);
