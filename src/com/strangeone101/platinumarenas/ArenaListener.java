@@ -1,9 +1,11 @@
 package com.strangeone101.platinumarenas;
 
 import com.strangeone101.platinumarenas.commands.BorderCommand;
+import com.strangeone101.platinumarenas.commands.DebugCommand;
 import org.bukkit.Location;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 
 public class ArenaListener implements Listener {
@@ -23,6 +25,15 @@ public class ArenaListener implements Listener {
                 BorderCommand.removePlayer(BorderCommand.borders.get(event.getPlayer()), event.getPlayer());
                 return;
             }
+        }
+    }
+
+    @EventHandler
+    public void onHit(PlayerInteractEvent event) {
+        if (event.getClickedBlock() != null && DebugCommand.BLOCK_LISTENERS.containsKey(event.getPlayer().getUniqueId())) {
+            DebugCommand.BLOCK_LISTENERS.get(event.getPlayer().getUniqueId()).accept(event.getClickedBlock());
+            DebugCommand.BLOCK_LISTENERS.remove(event.getPlayer().getUniqueId());
+            event.setCancelled(true);
         }
     }
 }

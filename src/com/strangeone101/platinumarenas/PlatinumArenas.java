@@ -34,6 +34,7 @@ public class PlatinumArenas extends JavaPlugin {
         ArenaCommand.createCommands();
         getCommand("platinumarenas").setExecutor(ArenaCommand.getCommandExecutor());
         getCommand("platinumarenas").setTabCompleter(ArenaCommand.getTabCompleter());
+        Bukkit.getPluginManager().registerEvents(new ArenaListener(), this);
 
         File folder = new File(getDataFolder(), "Arenas");
         if (!folder.exists()) {

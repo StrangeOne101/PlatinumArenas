@@ -6,7 +6,9 @@ import com.strangeone101.platinumarenas.PlatinumArenas;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class CancelCommand extends ArenaCommand {
 
@@ -53,5 +55,12 @@ public class CancelCommand extends ArenaCommand {
             sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " No arenas are currently being reset!");
             return;
         }
+    }
+
+    @Override
+    protected List<String> getTabCompletion(CommandSender sender, List<String> args) {
+        if (args.size() <= 1) return Arena.arenas.values().stream().filter(Arena::isBeingReset).map(Arena::getName).collect(Collectors.toList());
+
+        return new ArrayList<>();
     }
 }

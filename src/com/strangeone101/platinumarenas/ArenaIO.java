@@ -1,13 +1,9 @@
 package com.strangeone101.platinumarenas;
 
-import com.google.common.base.Ascii;
 import com.google.common.collect.Maps;
-import com.google.common.primitives.Primitives;
 import com.strangeone101.platinumarenas.blockentity.Wrapper;
 import com.strangeone101.platinumarenas.blockentity.WrapperRegistry;
 import org.apache.commons.io.IOCase;
-import org.apache.commons.io.filefilter.FileFileFilter;
-import org.apache.commons.io.filefilter.NameFileFilter;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -16,20 +12,12 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.scheduler.BukkitRunnable;
-
-import javax.swing.filechooser.FileNameExtensionFilter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileFilter;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
-import java.nio.ShortBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -49,7 +37,7 @@ public class ArenaIO {
     private static final byte KEY_SPLIT = '\u0003';
     private static final byte ARENASECTION_SPLIT = '\u0004';
 
-    public static final int FILE_VERSION = 4;
+    public static final int FILE_VERSION = 5;
 
     /**
      * Saves an arena to disk.
@@ -346,7 +334,6 @@ public class ArenaIO {
             short sectionCount = bb.getShort(0);
             short currentSection = 0;
 
-            byte[] arenaSectionSplit = {0x00, 0x00, 0x00, ARENASECTION_SPLIT};
 
             blockBytes = Arrays.copyOfRange(blockBytes, 2, blockBytes.length); //Cut the 2 bytes off at the front
             //PlatinumArenas.INSTANCE.getLogger().info(blockBytes.length + " bytes in blockBytes");
@@ -400,74 +387,35 @@ public class ArenaIO {
                     }
                 }
 
-                short[] amounts = new short[left / 2];
-                short[] types = new short[left / 2];
+                int numLeft = left / 2;
 
-                for (int i = 0; i < left / 2; i++) {
+                short[] amounts = new short[numLeft];
+                short[] types = new short[numLeft];
+
+                for (int i = 0; i < numLeft; i++) {
                     amounts[i] = buffer.getShort();
                     types[i] = buffer.getShort();
+
+                    if (version <= 4 && amounts[i] < 0) { //Fix overflow bug on old formats
+                        short next = (short) (amounts[i] - Short.MAX_VALUE); //Reverse overflow
+                        amounts[i] = Short.MAX_VALUE; //Set this index to max
+                        amounts = ArrayUtils.add(amounts, i + 1, next); //Insert the remainder into the amount in the next slot
+                        types = ArrayUtils.add(types, i + 1, types[i]); //Insert the same type into the next type index too
+                        numLeft++; //Since the array size increased
+                        i++;       //Skip the part we already did ourselves
+                    }
                 }
 
+                //Create the current section
                 Section section = new Section(arena, currentSection, start, end, types, amounts, NBT);
-                arena.getSections().add(section);
+                arena.getSections().add(section); //Add it to the arena automatically
                 currentSection++;
 
                 //The arena section split is no longer added to arenas on version 4 or later
                 if (version < 4 && currentSection != sectionCount) {
                     buffer.getInt(); //Skip the arena section split
                 }
-
-
             }
-
-            /*List<byte[]> bytesForSections = Util.split(arenaSectionSplit, blockBytes);
-            PlatinumArenas.INSTANCE.getLogger().info(bytesForSections.size() + " sections in arena.");
-
-            for (byte[] sectionBytes : bytesForSections) {
-                ByteBuffer buffer = ByteBuffer.allocate(sectionBytes.length);
-                buffer.put(sectionBytes);
-                buffer.position(0);
-                int x1 = buffer.getInt();
-                int y1 = buffer.getInt();
-                int z1 = buffer.getInt();
-                int x2 = buffer.getInt();
-                int y2 = buffer.getInt();
-                int z2 = buffer.getInt();
-
-                Location start = new Location(corner1.getWorld(), x1, y1, z1);
-                Location end = new Location(corner1.getWorld(), x2, y2, z2);
-
-                int left = buffer.getInt();
-                PlatinumArenas.INSTANCE.getLogger().info(left + " shortsets in this section");
-                short[] amounts = new short[left / 2];
-                short[] types = new short[left / 2];
-                int i = 0;
-                while (buffer.hasRemaining()) {
-                    amounts[i] = buffer.getShort();
-                    types[i] = buffer.getShort();
-                    i++;
-                }
-
-                Section section = new Section(arena, start, end, types, amounts);
-                arena.getSections().add(section);
-            }*/
-
-
-            /*ShortBuffer sb = ShortBuffer.allocate(blockBytes.length / 2);
-            short[] blockList = new short[]
-            while (sb.hasRemaining()) {
-                short amount = sb.get();
-                short type = sb.get();
-
-                for (int i = 0; i < amount; i++) {
-                    blockList.add(type);
-                }
-            }*/
-
-            //ARENA RECREATION
-
-
-            //arena.merge((BlockData[]) blockDataSet.toArray(), blockList.stream().map((Short) i->(short)i).toArray());
 
             return arena;
 

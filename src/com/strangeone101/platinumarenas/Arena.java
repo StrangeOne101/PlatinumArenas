@@ -6,7 +6,6 @@ import com.strangeone101.platinumarenas.commands.DebugCommand;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -21,6 +20,7 @@ import java.io.File;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.zip.DataFormatException;
 
 public class Arena {
 
@@ -300,6 +300,7 @@ public class Arena {
         int sectionArea = width * length;
         int sectionsX = 1;
         int sectionsZ = 1;
+        //TODO introduce sections cut over the Y axis
         boolean x = true;
 
         while (sectionArea > maxSectionArea) {
@@ -563,6 +564,17 @@ public class Arena {
 
             if (!keyList.contains(loc.getBlock().getBlockData())) {
                 keyList.add(loc.getBlock().getBlockData());
+
+                if (keyList.size() == Short.MAX_VALUE) {
+                    player.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " Oh bother. It looks like you've used up all " + Short.MAX_VALUE + " block states that can be stored in an arena file.");
+                    player.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " This means that there is too many types of blocks in this arena to safely store. Are you running modded minecraft?");
+                    player.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " For now, all you can do is create a smaller arena with less than " + Short.MAX_VALUE + " different block states.");
+                    try {
+                        throw new DataFormatException("Too many blockstates! Exceeded the max of " + Short.MAX_VALUE);
+                    } catch (DataFormatException e) {
+                        e.printStackTrace();
+                    }
+                }
                 //PlatinumArenas.INSTANCE.getLogger().info("Debug2: Adding " + loc.getBlock().getBlockData().getAsString() + " to keylist");
             }
 
@@ -587,6 +599,11 @@ public class Arena {
                 data.index++;
                 data.totalBlocks++;
                 updatePlayerCreate(player, data);
+
+                if (data.blockAmounts[data.blockAmounts.length - 1] == Short.MAX_VALUE) { //We have reached the max amount for this array
+                    data.blockTypes = ArrayUtils.add(data.blockTypes, blockKeyIndex); //Add the same type to the array so we can start the count again from 0
+                    data.blockAmounts = ArrayUtils.add(data.blockAmounts, (short)0); //Start the count from 0 again
+                }
                 continue;
             }
 
@@ -720,10 +737,16 @@ public class Arena {
         return new Location(world, x, y, z);
     }
 
+    /**
+     * @return All sections within this arena
+     */
     public List<Section> getSections() {
         return sections;
     }
 
+    /**
+     * @return A string estimating how large the arena is. E.g. "Small", "Large", "Insane", etc
+     */
     public String getStringSize() {
         int area = getWidth() * getHeight() * getLength();
         String size = area < 2000 ? "Very Small" : (area < 10_000 ? "Small" : (area < 50_000 ? "Medium" : (area < 200_000 ? "Large" : (area < 2_000_000 ? "Very Large" : ("Insane")))));
@@ -731,8 +754,24 @@ public class Arena {
         return size;
     }
 
+    /**
+     * @return True if this arena is owned by a player or not
+     */
     public boolean hasOwner() {
         return !creator.equals(PlatinumArenas.DEFAULT_OWNER);
+    }
+
+    /**
+     * Checks to see if the passed location is within this arena or not
+     * @param location The location
+     * @return True if it is within this arena
+     */
+    public boolean contains(Location location) {
+        if (location.getWorld() != getCorner1().getWorld()) return false;
+
+        return location.getX() >= corner1.getX() && location.getX() <= corner2.getX() &&
+                location.getY() >= corner1.getY() && location.getY() <= corner2.getY() &&
+                location.getZ() >= corner1.getZ() && location.getZ() <= corner2.getZ();
     }
 
     @Override

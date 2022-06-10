@@ -117,7 +117,7 @@ public class Section {
             short type = this.blockTypes[this.resetTypeIndex];
             short amount = this.blockAmounts[this.resetTypeIndex];
 
-            BlockData data = this.parent.getKeys()[type];
+            BlockData data = this.getParent().getKeys()[type];
 
             while (resetCurrentTypeIndex < amount)
             {
@@ -239,7 +239,7 @@ public class Section {
     /**
      * @return The amounts of each type of block
      */
-    protected short[] getBlockAmounts() {
+    public short[] getBlockAmounts() {
         return blockAmounts;
     }
 
@@ -247,7 +247,7 @@ public class Section {
      * @return An array of all the block types to reset in the arena. The
      * short is the index key from the parent arena's block keyset
      */
-    protected short[] getBlockTypes() {
+    public short[] getBlockTypes() {
         return blockTypes;
     }
 
@@ -311,6 +311,19 @@ public class Section {
         return out.toByteArray();
     }
 
+    /**
+     * Checks to see if the passed location is within this section or not
+     * @param location The location
+     * @return True if it is within this section
+     */
+    public boolean contains(Location location) {
+        if (location.getWorld() != getStart().getWorld()) return false;
+
+        return location.getX() >= start.getX() && location.getX() <= end.getX() &&
+                location.getY() >= start.getY() && location.getY() <= end.getY() &&
+                location.getZ() >= start.getZ() && location.getZ() <= end.getZ();
+    }
+
     public Map<Integer, Pair<Wrapper, Object>> getNBTCache() {
         return NBT_CACHE;
     }
@@ -326,18 +339,22 @@ public class Section {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Section section = (Section) o;
-        return parent.equals(section.parent) &&
+        return getParent().equals(section.getParent()) &&
                 start.equals(section.start) &&
                 end.equals(section.end);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(parent, start, end);
+        int result = Objects.hash(getParent(), start, end);
         return result;
     }
 
     public int getID() {
         return ID;
+    }
+
+    public Arena getParent() {
+        return parent;
     }
 }

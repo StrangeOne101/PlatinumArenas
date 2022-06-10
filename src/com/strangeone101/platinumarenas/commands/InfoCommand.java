@@ -99,7 +99,7 @@ public class InfoCommand extends ArenaCommand {
         }
     }
 
-    private String getTime(long time) {
+    public static String getTime(long time) {
         long relative = System.currentTimeMillis() - time;
 
         if (relative < 1000 * 60 * 60 * 24) { //Less than 24h ago
