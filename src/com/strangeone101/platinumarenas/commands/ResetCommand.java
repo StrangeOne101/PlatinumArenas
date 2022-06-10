@@ -12,6 +12,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
@@ -48,6 +49,25 @@ public class ResetCommand extends ArenaCommand {
             return;
         }*/
 
+        boolean silent = false;
+
+        //Check for any "-" arguments and remove them beforehand
+        for (Iterator<String> iterator = args.iterator(); iterator.hasNext(); ) {
+            String next =  iterator.next();
+
+            if (next.startsWith("-")) {
+                String argument = next.substring(1);
+
+                if (argument.equalsIgnoreCase("silent") || argument.equalsIgnoreCase("s")) {
+                    silent = true;
+                    iterator.remove();
+                } else {
+                    sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.RED + " Invalid argument \"" + argument + "\"!");
+                    return;
+                }
+            }
+        }
+
         ResetSpeed speed = ResetSpeed.NORMAL;
         if (args.size() >= 2) {
             speed = ResetSpeed.getSpeed(args.get(1));
@@ -61,7 +81,8 @@ public class ResetCommand extends ArenaCommand {
                 return;
             }
             ResetSpeed finalSpeed = speed;
-            ConfirmCommand.confirmTasks.put(sender, () -> resetArena(arena, finalSpeed, sender));
+            boolean finalSilent = silent;
+            ConfirmCommand.confirmTasks.put(sender, () -> resetArena(arena, finalSpeed, sender, finalSilent));
             new BukkitRunnable() {
                 @Override
                 public void run() {
@@ -71,21 +92,22 @@ public class ResetCommand extends ArenaCommand {
             sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.YELLOW + " Are you sure you want to reset arena \"" + arena.getName() + "\" instantly?");
             sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.YELLOW + " To confirm this, use " + ChatColor.RED + "/arena confirm");
         } else {
-            resetArena(arena, speed, sender);
+            resetArena(arena, speed, sender, silent);
         }
 
     }
 
-    private void resetArena(Arena arena, ResetSpeed speed, CommandSender sender) {
+    private void resetArena(Arena arena, ResetSpeed speed, CommandSender sender, boolean silent) {
         if (arena.isBeingReset()) {
             arena.setResetSpeed(speed.getAmount() / 20);
+            arena.setResetSilence(silent);
             sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Changing arena reset speed to \"" + speed.name().replace("_", " ").toLowerCase(Locale.ROOT) + "\"!");
             return;
         }
 
         sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Resetting arena \"" + arena.getName() + "\"!");
         long time = System.currentTimeMillis();
-        arena.reset(speed.getAmount() / 20, sender);
+        arena.reset(speed.getAmount() / 20, sender, silent);
     }
 
 
@@ -119,6 +141,18 @@ public class ResetCommand extends ArenaCommand {
             }
             return NORMAL;
         }
+
+        /**
+         * Re-set all the reset amount values from config
+         */
+        public static void reload() {
+            VERY_SLOW.amount = ConfigManager.BLOCKS_RESET_PER_SECOND_VERYSLOW;
+            SLOW.amount = ConfigManager.BLOCKS_RESET_PER_SECOND_SLOW;
+            NORMAL.amount = ConfigManager.BLOCKS_RESET_PER_SECOND_NORMAL;
+            FAST.amount = ConfigManager.BLOCKS_RESET_PER_SECOND_FAST;
+            VERY_FAST.amount = ConfigManager.BLOCKS_RESET_PER_SECOND_VERYFAST;
+            EXTREMELY_FAST.amount = ConfigManager.BLOCKS_RESET_PER_SECOND_EXTREME;
+        }
     }
 
     @Override
@@ -132,6 +166,8 @@ public class ResetCommand extends ArenaCommand {
             if (sender.hasPermission("platinumarenas.reset.instant")) {
                 completions.add("instant");
             }
+        } else if (args.size() == 3) {
+            completions.add("-silent");
         }
 
         return completions;

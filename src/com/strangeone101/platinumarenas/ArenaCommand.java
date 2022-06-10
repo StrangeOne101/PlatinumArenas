@@ -89,7 +89,7 @@ public abstract class ArenaCommand {
             if (args.length > 0) {
                 for (String s : subcommands.keySet()) {
                     if (args[0].equalsIgnoreCase(s) || Arrays.asList(subcommands.get(s).getAliases()).contains(args[0].toLowerCase())) {
-                        subcommands.get(s).execute(sender, Arrays.asList(Arrays.copyOfRange(args, 1, args.length)));
+                        subcommands.get(s).execute(sender, new ArrayList<>(Arrays.asList(Arrays.copyOfRange(args, 1, args.length))));
                         return true;
                     }
                 }

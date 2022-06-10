@@ -15,7 +15,7 @@ import java.util.List;
 
 public class DebugCommand extends ArenaCommand {
 
-    public static String debugString = PlatinumArenas.INSTANCE.getMCVersion();
+    public static String debugString;
 
     public DebugCommand() {
         super("debug", "Debug things with this plugin", "/arena debug <arena>", new String[0]);

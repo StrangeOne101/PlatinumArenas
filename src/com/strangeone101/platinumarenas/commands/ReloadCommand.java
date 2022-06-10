@@ -26,6 +26,7 @@ public class ReloadCommand extends ArenaCommand {
 
         ArenaIO.loadAllArenas();
         ConfigManager.setup();
+        ResetCommand.ResetSpeed.reload();
         sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Arenas and config reloaded!");
     }
 }

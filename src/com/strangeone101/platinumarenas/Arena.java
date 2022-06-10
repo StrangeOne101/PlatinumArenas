@@ -122,6 +122,10 @@ public class Arena {
     }
 
     public void reset(int resetSpeed, CommandSender sender) {
+        this.reset(resetSpeed, sender, false);
+    }
+
+    public void reset(int resetSpeed, CommandSender sender, boolean silent) {
         if (getSections().size() == 0) return;
 
 
@@ -129,6 +133,7 @@ public class Arena {
         data.maxBlocksThisTick = resetSpeed;
         data.speed = resetSpeed;
         data.sender = sender;
+        data.silent = silent;
         data.startTime = System.currentTimeMillis();
         data.totalBlocksToReset = getTotalBlocks();
         for (Section s : getSections()) {
@@ -207,7 +212,7 @@ public class Arena {
         if (System.currentTimeMillis() > data.lastUpdate + ConfigManager.RESET_UPDATE_INTERVAL * 1000L && data.tick % 5 == 0) {
             double percentageDone = (double)data.totalBlocksReset / (double)data.totalBlocksToReset * 100;
 
-            if (percentageDone > data.lastPerUpdate + ConfigManager.RESET_UPDATE_PERCENTAGE) {
+            if (percentageDone > data.lastPerUpdate + ConfigManager.RESET_UPDATE_PERCENTAGE && !data.silent) {
                 data.lastUpdate = System.currentTimeMillis();
                 data.lastPerUpdate = (float) percentageDone;
 
@@ -226,7 +231,7 @@ public class Arena {
             String s = "Reset took " + resetMs + "ms" + "\n" + "Reset calculations took " + calcMs + "ms";
             DebugCommand.debugString = s;
 
-            if (sender != null && (!(sender instanceof Player) || ((Player)sender).isOnline())) {
+            if (sender != null && (!(sender instanceof Player) || ((Player)sender).isOnline()) && !data.silent) {
                 long took = System.currentTimeMillis() - data.startTime;
                 String tookS = took < 1000 ? took + "ms" : (took > 1000 * 120 ? took / 60000 + "m" : took / 1000 + "s");
                 sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Arena \"" + getName() + "\" reset complete (took " + tookS + ")!");
@@ -389,36 +394,63 @@ public class Arena {
         return arena;
     }
 
+    /**
+     * @return True if the arena is currently being reset
+     */
     public boolean isBeingReset() {
         return this.currentReset != null;
     }
 
+    /**
+     * @return True if the arena reset is tasked to be canceled
+     */
     public boolean isBeingCanceled() {
         return cancelReset;
     }
 
+    /**
+     * Cancel the current arena reset
+     */
     public void cancelReset() {
         if (isBeingReset()) cancelReset = true;
     }
 
+    /**
+     * @return The minecraft version this arena was created in
+     */
     public String getMcVersion() {
         return mcVersion;
     }
 
+    /**
+     * Set the minecraft version this arena was created in
+     * @param mcVersion The MC version
+     */
     void setMcVersion(String mcVersion) {
         this.mcVersion = mcVersion;
     }
 
+    /**
+     * @return The file version of the arena file for this arena
+     */
     public int getFileVersion() {
         return fileVersion;
     }
 
+    /**
+     * Set the arena file version. Internal use only.
+     * @param fileVersion The file version
+     */
     void setFileVersion(int fileVersion) {
         this.fileVersion = fileVersion;
     }
 
+    /**
+     * Change the speed of the current reset for this arena
+     * @param speed The speed, in blocks per tick
+     */
     public void setResetSpeed(int speed) {
-        if (this.currentReset != null) {
+        if (isBeingReset()) {
             this.currentReset.speed = speed;
             this.currentReset.maxBlocksThisTick = speed;
 
@@ -431,12 +463,23 @@ public class Arena {
         }
     }
 
+    /**
+     * Change whether the current reset should be silent or not
+     * @param silent Whether the arena is silent
+     */
+    public void setResetSilence(boolean silent) {
+        if (isBeingReset()) {
+            this.currentReset.silent = silent;
+        }
+    }
+
 
     private static class CreationLoopinData {
         List<Section> sections;
         List<Location> sectionStarts, sectionEnds;
         int tick, index, totalBlocks, maxBlocks;
         long lastUpdate;
+        boolean silent = false;
         Arena arena;
         short[] blockAmounts, blockTypes = new short[0];
         Map<Integer, Pair<Wrapper, Object>> NBT = new HashMap<>();
@@ -463,6 +506,7 @@ public class Arena {
         int tick = 0;
         int totalBlocksReset = 0;
         int totalBlocksToReset;
+        boolean silent = false;
     }
 
     /**
@@ -577,7 +621,7 @@ public class Arena {
     }
 
     private static void updatePlayerCreate(Player player, CreationLoopinData data) {
-        if (System.currentTimeMillis() - data.lastUpdate > 10 * 1000) {
+        if (System.currentTimeMillis() - data.lastUpdate > 10 * 1000 && !data.silent) {
             double perc = ((double)data.totalBlocks / (double)data.maxBlocks);
             NumberFormat format = NumberFormat.getPercentInstance();
             format.setMinimumFractionDigits(2);

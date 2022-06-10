@@ -5,6 +5,10 @@ import com.google.common.collect.Maps;
 import com.google.common.primitives.Primitives;
 import com.strangeone101.platinumarenas.blockentity.Wrapper;
 import com.strangeone101.platinumarenas.blockentity.WrapperRegistry;
+import org.apache.commons.io.IOCase;
+import org.apache.commons.io.filefilter.FileFileFilter;
+import org.apache.commons.io.filefilter.NameFileFilter;
+import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -14,8 +18,10 @@ import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -511,19 +517,19 @@ public class ArenaIO {
         Arena.arenas.clear();
         long time = System.currentTimeMillis();
 
-        for (File f : folder.listFiles()) {
-            if (f.getName().toLowerCase(Locale.ROOT).endsWith(".dat") || f.getName().toLowerCase(Locale.ROOT).endsWith(".datc")) {
-                try {
-                    Arena arena = ArenaIO.loadArena(f);
-                    if (arena == null) continue;
-                    PlatinumArenas.INSTANCE.getLogger().info("Loaded arena \"" + arena.getName() + "\" from file " + f.getName());
-                    Arena.arenas.put(arena.getName(), arena);
-                } catch (Exception e) {
-                    PlatinumArenas.INSTANCE.getLogger().warning("Failed to load arena file \"" + f.getName() + "\"!");
-                    e.printStackTrace();
-                }
+        Arrays.stream(folder.listFiles((FileFilter) new SuffixFileFilter(new String[] {".dat", ".datc"}, IOCase.INSENSITIVE))).parallel().forEach((file) -> {
+            try {
+                Arena arena = ArenaIO.loadArena(file);
+                if (arena == null) return;
+                PlatinumArenas.INSTANCE.getLogger().info("Loaded arena \"" + arena.getName() + "\" from file " + file.getName());
+                Arena.arenas.put(arena.getName(), arena);
+            } catch (Exception e) {
+                PlatinumArenas.INSTANCE.getLogger().warning("Failed to load arena file \"" + file.getName() + "\"!");
+                e.printStackTrace();
             }
-        }
+
+        });
+
         long took = System.currentTimeMillis() - time;
 
         PlatinumArenas.INSTANCE.getLogger().info("Loaded " + Arena.arenas.size() + " arenas in " + took + "ms!");

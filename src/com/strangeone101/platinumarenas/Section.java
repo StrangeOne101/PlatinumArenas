@@ -13,11 +13,9 @@ import org.bukkit.block.data.BlockData;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 public class Section {
 
@@ -32,27 +30,19 @@ public class Section {
     private Map<Integer, Pair<Wrapper, Object>> NBT_CACHE = new HashMap<>();
 
     /**
-     * The total block index of where the reset is up to. This variable is set
-     * back to 0 after the reset pauses (this allows us to reset the arena over
-     * time instead of in a single tick).
-     */
-    private int resetIndex = -1;
-
-    private int resetTypeIndex = 0;
-    /**
-     * The block number the reset is currently on in the blockAmounts variable. Will be between 0 and
-     * blockAmounts[resetTypeIndex] (short)
-     */
-    private int resetAmountIndex = 0;
-
-    private int maxResetPerTick = 0;
-
-    /**
      * The index of where the reset is currently up to in the blockTypes variable
      */
-    private int index;
-    private int locationIndex;
-    private int positionIndex;
+    private int resetTypeIndex;
+    /**
+     * The index of where the reset is currently up to in the total amount of blocks placed
+     * in this section.
+     */
+    private int resetLocationIndex;
+    /**
+     * The index of where the reset is currently up to for the current block type. This resets
+     * to 0 every time the block type being placed changes
+     */
+    private int resetCurrentTypeIndex;
 
     /**
      * How many blocks reset this tick. Just because there is no easy way to call this back in the
@@ -76,14 +66,21 @@ public class Section {
         this.NBT_CACHE = nbt;
     }
 
-    public boolean isResseting() {
-        return resetIndex != -1;
+    /**
+     * Whether the section is currently being reset or not
+     * @return
+     */
+    public boolean isResetting() {
+        return resetLocationIndex != -1;
     }
 
+    /**
+     * Cancel an ongoing reset
+     */
     public void cancelReset() {
-        resetIndex = -1;
+        resetLocationIndex = -1;
+        resetCurrentTypeIndex = 0;
         resetTypeIndex = 0;
-        resetAmountIndex = 0;
     }
 
     /**
@@ -102,29 +99,29 @@ public class Section {
 
         // resetIndex should remain at 0, and only be reset when the entire section is complete
         // This way we can continue iterating from where we left off
-        if (index < 0)
+        if (resetTypeIndex < 0)
         {
-            index = 0;
+            resetTypeIndex = 0;
         }
 
-        if (locationIndex < 0)
+        if (resetLocationIndex < 0)
         {
-            locationIndex = 0;
+            resetLocationIndex = 0;
         }
 
         int count = 0;
         blocksResetThisTick = 0;
 
-        while (index < blockTypes.length)
+        while (resetTypeIndex < blockTypes.length)
         {
-            short type = this.blockTypes[this.index];
-            short amount = this.blockAmounts[this.index];
+            short type = this.blockTypes[this.resetTypeIndex];
+            short amount = this.blockAmounts[this.resetTypeIndex];
 
             BlockData data = this.parent.getKeys()[type];
 
-            while (positionIndex < amount)
+            while (resetCurrentTypeIndex < amount)
             {
-                Location offset = Arena.getLocationAtIndex(w, h, l, getStart().getWorld(), locationIndex);
+                Location offset = Arena.getLocationAtIndex(w, h, l, getStart().getWorld(), resetLocationIndex);
 
                 Block block = getStart().add(offset).getBlock();
                 getStart().subtract(offset);
@@ -132,11 +129,11 @@ public class Section {
                 block.setBlockData(data, false);
 
                 //Custom NBT on blocks
-                if (NBT_CACHE.containsKey(locationIndex)) { //If the NBT cache has this location
+                if (NBT_CACHE.containsKey(resetLocationIndex)) { //If the NBT cache has this location
                     if (!(block.getState() instanceof TileState)) { //If the placed block doesn't have NBT somehow???
                         PlatinumArenas.INSTANCE.getLogger().warning("Tried to place NBT at block " + block.toString() + " but can't (no TileState)");
                     } else {
-                        Pair<Wrapper, Object> nbtPair = NBT_CACHE.get(locationIndex);
+                        Pair<Wrapper, Object> nbtPair = NBT_CACHE.get(resetLocationIndex);
                         Wrapper wrapper = nbtPair.getKey();
                         Object cache = nbtPair.getRight();
 
@@ -155,9 +152,9 @@ public class Section {
                 }
 
                 count++;
-                positionIndex++;
+                resetCurrentTypeIndex++;
                 blocksResetThisTick++;
-                locationIndex++;
+                resetLocationIndex++;
 
                 if (max > 0 && count > max)
                 {
@@ -165,51 +162,16 @@ public class Section {
                 }
             }
 
-            positionIndex = 0;
-            index++;
+            resetCurrentTypeIndex = 0;
+            resetTypeIndex++;
         }
 
-        index = 0;
-        locationIndex = 0;
-        positionIndex = 0;
-
-//        for (resetTypeIndex = resetTypeIndex; resetTypeIndex < blockTypes.length; resetTypeIndex++) {
-//            for (resetAmountIndex = resetAmountIndex; resetAmountIndex < blockAmounts[resetAmountIndex]; resetAmountIndex++) {
-//
-//                BlockData block = parent.getKeys()[blockTypes[resetTypeIndex]];
-//                Location loc = getStart().clone().add(Arena.getLocationAtIndex(w, h, l, getStart().getWorld(), resetIndex));
-//
-//                System.out.println("resetTypeIndex: " + resetAmountIndex + ", resetAmountIndex: " + resetAmountIndex + ", resetIndex: " + resetIndex + ", amount: " + amount);
-//                System.out.println("Updating " + loc + " to " + block.getMaterial());
-//
-//                loc.getBlock().setBlockData(block);
-//
-//                resetIndex++;
-//
-//                if (amount > 0 && resetIndex > amount) {
-//                    resetIndex = 0;
-//                    return false;
-//                }
-//            }
-//        }
-
-        resetIndex = 0;
         resetTypeIndex = 0;
-        resetAmountIndex = 0;
+        resetLocationIndex = -1;
+        resetCurrentTypeIndex = 0;
 
         dirty = false;
         return true;
-    }
-
-    /**
-     * Resets the section. This will continue off where it last left off, and
-     * will not stop until the entire section is reset. This may cause a lot
-     * of lag. Use `reset(amount)` instead.
-     *
-     * @return If the section is finished resetting.
-     */
-    public boolean reset() {
-        return reset(-1);
     }
 
     public void setDirty(boolean dirty) {
@@ -251,26 +213,49 @@ public class Section {
         return getWidth() * getHeight() * getLength();
     }
 
+    /**
+     * @return The amount of blocks reset in the current tick
+     */
     protected int getBlocksResetThisTick() {
         return blocksResetThisTick;
     }
 
+    /**
+     * @return The start location of this section. This is where the reset
+     * will start from
+     */
     public Location getStart() {
         return start;
     }
 
+    /**
+     * @return The end location of this section. This is the last block
+     * location that will be reset
+     */
     public Location getEnd() {
         return end;
     }
 
+    /**
+     * @return The amounts of each type of block
+     */
     protected short[] getBlockAmounts() {
         return blockAmounts;
     }
 
+    /**
+     * @return An array of all the block types to reset in the arena. The
+     * short is the index key from the parent arena's block keyset
+     */
     protected short[] getBlockTypes() {
         return blockTypes;
     }
 
+    /**
+     * Converts all the NBT data in this section into a byte array
+     * ready for writing to file
+     * @return The byte array of NBT
+     */
     protected byte[] getNBTData() {
         Map<Wrapper, Map<Object, List<Integer>>> wrapperTypes = new HashMap<>();
 
