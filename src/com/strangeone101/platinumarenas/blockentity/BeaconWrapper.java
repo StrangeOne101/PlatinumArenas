@@ -48,8 +48,8 @@ public class BeaconWrapper implements Wrapper<Beacon, BeaconWrapper.InternalBeac
         String effect1S = new String(effect1, StandardCharsets.US_ASCII);
 
         int length2 = buff.get();
-        byte[] effect2 = new byte[length];
-        for (int i = 0; i < length; i++) effect2[i] = buff.get();
+        byte[] effect2 = new byte[length2];
+        for (int i = 0; i < length2; i++) effect2[i] = buff.get();
         String effect2S = new String(effect2, StandardCharsets.US_ASCII);
 
         InternalBeacon cache = new InternalBeacon();
