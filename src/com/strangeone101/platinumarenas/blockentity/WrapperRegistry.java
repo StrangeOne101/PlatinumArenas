@@ -55,6 +55,7 @@ public class WrapperRegistry {
                 Material.PINK_BANNER, Material.PINK_WALL_BANNER,
                 Material.BROWN_BANNER, Material.BROWN_WALL_BANNER);
         register(new SignWrapper(), getSigns());
+        register(new BeaconWrapper(), Material.BEACON);
     }
 
     private static Material[] getSigns() {
@@ -68,8 +69,8 @@ public class WrapperRegistry {
 
         for (String m : new String[] {"crimson_sign", "crimson_wall_sign", "warped_sign",
                 "warped_wall_sign", "mangrove_sign", "mangrove_wall_sign"}) {
-            if (Material.getMaterial(m.toUpperCase(Locale.ROOT)) != null) {
-                materials.add(Material.getMaterial(m));
+            if (Material.getMaterial(m.toUpperCase(Locale.ENGLISH)) != null) {
+                materials.add(Material.getMaterial(m.toUpperCase(Locale.ENGLISH)));
             }
         }
 

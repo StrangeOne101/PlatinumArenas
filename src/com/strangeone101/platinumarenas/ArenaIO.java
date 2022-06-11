@@ -205,8 +205,8 @@ public class ArenaIO {
             Location corner2 = null;
             UUID owner = PlatinumArenas.DEFAULT_OWNER;
             long created = 0;
-            int arenaMCVersion = getVersion("1.15.2"); //The default for when the version isn't in the file
-            int currentMCVersion = getVersion(PlatinumArenas.INSTANCE.getMCVersion());
+            int arenaMCVersion = PlatinumArenas.getIntVersion("1.15.2"); //The default for when the version isn't in the file
+            int currentMCVersion = PlatinumArenas.getIntVersion(PlatinumArenas.getMCVersion());
 
             int version = Integer.parseInt(headerString.split(",")[0]);
 
@@ -214,7 +214,12 @@ public class ArenaIO {
                 created = Long.parseLong(headerString.split(",")[11]);
             }
             if (version >= 3) {
-                arenaMCVersion = getVersion(headerString.split(",")[10]);
+                arenaMCVersion = PlatinumArenas.getIntVersion(headerString.split(",")[10]);
+
+                if (arenaMCVersion > currentMCVersion) {
+                    PlatinumArenas.INSTANCE.getLogger().warning("Arena \"" + name + "\" was made in a newer version of minecraft!");
+                    PlatinumArenas.INSTANCE.getLogger().warning("PlatinumArenas will attempt to load it but may fail if it runs into unknown blockstates!");
+                }
             }
             if (version >= 2) {
                 owner = UUID.fromString(headerString.split(",")[9]);
@@ -308,7 +313,14 @@ public class ArenaIO {
                     blockDataSet.add(bukkitData);
                 } catch (IllegalArgumentException e) {
                     PlatinumArenas.INSTANCE.getLogger().severe("Failed to parse block data '" + blockData + "' for arena '" + name + "'!");
-                    blockDataSet.add(Bukkit.createBlockData(blockData.split("\\[")[0]));
+                    try {
+                        blockDataSet.add(Bukkit.createBlockData(blockData.split("\\[")[0])); //One without blockstates
+                    } catch (IllegalArgumentException e2) {
+                        PlatinumArenas.INSTANCE.getLogger().severe("Failed to even use the base material! Are you trying to load an arena from another minecraft version?");
+                        PlatinumArenas.INSTANCE.getLogger().severe("Arena \"" + name + "\" will not be loaded.");
+                        e.printStackTrace();
+                        return null;
+                    }
                 }
             }
 
@@ -427,30 +439,7 @@ public class ArenaIO {
         return null;  //unfinished
     }
 
-    private static int getVersion(String version) {
 
-        if (!version.matches("\\d+\\.\\d+(\\.\\d+)?")) {
-            PlatinumArenas.INSTANCE.getLogger().warning("Version not valid! Cannot parse version \"" + version + "\"");
-
-            return 1164; //1.16.4
-        }
-
-        String[] split = version.split("\\.", 3);
-
-        int major = Integer.parseInt(split[0]);
-        int minor = 0;
-        int fix = 0;
-
-        if (split.length > 1) {
-            minor = Integer.parseInt(split[1]);
-
-            if (split.length > 2) {
-                fix = Integer.parseInt(split[2]);
-            }
-        }
-
-        return major * 1000 + minor * 10 + fix; //1.16.4 -> 1164; 1.18 -> 1180
-    }
 
     /**
      * Unloads the current arenas and loads them all from file again.

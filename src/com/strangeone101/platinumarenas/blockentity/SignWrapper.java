@@ -2,6 +2,7 @@ package com.strangeone101.platinumarenas.blockentity;
 
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
+import com.strangeone101.platinumarenas.PlatinumArenas;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.DyeColor;
 import org.bukkit.block.Sign;
@@ -16,9 +17,21 @@ import java.util.List;
 
 public class SignWrapper implements Wrapper<Sign, SignWrapper.InternalSign> {
 
+    private int mcVersion;
+
+    public SignWrapper() {
+        mcVersion = PlatinumArenas.getIntVersion(PlatinumArenas.getMCVersion());
+    }
+
     @Override
     public byte[] write(InternalSign sign) {
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        byte color = (byte)sign.color.ordinal();
+
+        if (sign.glow) {
+            color += Byte.MAX_VALUE;
+        }
+
         out.write((byte)sign.color.ordinal());
         out.write((byte)sign.lines.size());
         for (String s : sign.lines) {
@@ -33,6 +46,11 @@ public class SignWrapper implements Wrapper<Sign, SignWrapper.InternalSign> {
     public InternalSign cache(Sign baseTileState) {
         InternalSign sign = new InternalSign();
         sign.color = baseTileState.getColor();
+        if (mcVersion >= 1170) {
+            if (baseTileState.isGlowingText()) {
+                sign.glow = true;
+            }
+        }
         sign.lines = Arrays.asList(baseTileState.getLines());
         return sign;
     }
@@ -44,7 +62,12 @@ public class SignWrapper implements Wrapper<Sign, SignWrapper.InternalSign> {
 
         InternalSign cache = new InternalSign();
 
-        DyeColor color = DyeColor.values()[buffer.get()];
+        byte byteColor = buffer.get();
+        if (byteColor < 0) {
+            byteColor -= Byte.MAX_VALUE;
+            cache.glow = true;
+        }
+        DyeColor color = DyeColor.values()[byteColor];
         cache.color = color;
 
         int length = buffer.get();
@@ -67,6 +90,7 @@ public class SignWrapper implements Wrapper<Sign, SignWrapper.InternalSign> {
         for (int i = 0; i < cache.lines.size(); i++) {
             baseTileState.setLine(i, cache.lines.get(i));
         }
+        if (mcVersion >= 1170) baseTileState.setGlowingText(cache.glow);
         return baseTileState;
     }
 
@@ -83,5 +107,6 @@ public class SignWrapper implements Wrapper<Sign, SignWrapper.InternalSign> {
     protected static class InternalSign {
         private DyeColor color;
         private List<String> lines = new ArrayList<>();
+        private boolean glow = false;
     }
 }

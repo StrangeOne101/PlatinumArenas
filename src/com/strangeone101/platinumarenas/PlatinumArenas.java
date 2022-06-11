@@ -86,7 +86,32 @@ public class PlatinumArenas extends JavaPlugin {
         return ready;
     }
 
-    public String getMCVersion() {
+    public static String getMCVersion() {
         return Bukkit.getBukkitVersion().split("-", 2)[0];
+    }
+
+    public static int getIntVersion(String version) {
+
+        if (!version.matches("\\d+\\.\\d+(\\.\\d+)?")) {
+            PlatinumArenas.INSTANCE.getLogger().warning("Version not valid! Cannot parse version \"" + version + "\"");
+
+            return 1164; //1.16.4
+        }
+
+        String[] split = version.split("\\.", 3);
+
+        int major = Integer.parseInt(split[0]);
+        int minor = 0;
+        int fix = 0;
+
+        if (split.length > 1) {
+            minor = Integer.parseInt(split[1]);
+
+            if (split.length > 2) {
+                fix = Integer.parseInt(split[2]);
+            }
+        }
+
+        return major * 1000 + minor * 10 + fix; //1.16.4 -> 1164; 1.18 -> 1180
     }
 }
