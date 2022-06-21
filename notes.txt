@@ -1,8 +1,0 @@
-00000000-0000-0000-0000-000000000000
-
-
-TODO List
-1. Change Y->X->Z format to X->Z->Y (saves space) DONE
-2. (Maybe) convert block amounts to bytes (save 1/4 space). Depends on how successful the above is at saving space
-4. Make section re-splitter command. This will make it more effecient to restore parts of the arena without doing the entire thing
-6. Make reset send progress to player
