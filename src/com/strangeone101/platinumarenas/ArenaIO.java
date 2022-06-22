@@ -3,8 +3,6 @@ package com.strangeone101.platinumarenas;
 import com.google.common.collect.Maps;
 import com.strangeone101.platinumarenas.blockentity.Wrapper;
 import com.strangeone101.platinumarenas.blockentity.WrapperRegistry;
-import org.apache.commons.io.IOCase;
-import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -14,7 +12,6 @@ import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -454,7 +451,8 @@ public class ArenaIO {
         Arena.arenas.clear();
         long time = System.currentTimeMillis();
 
-        Arrays.stream(folder.listFiles((FileFilter) new SuffixFileFilter(new String[] {".dat", ".datc"}, IOCase.INSENSITIVE))).parallel().forEach((file) -> {
+        Arrays.stream(folder.listFiles((f) -> f.getName().toLowerCase().endsWith(".datc") ||
+                f.getName().toLowerCase().endsWith(".dat"))).parallel().forEach((file) -> {
             try {
                 Arena arena = ArenaIO.loadArena(file);
                 if (arena == null) return;
