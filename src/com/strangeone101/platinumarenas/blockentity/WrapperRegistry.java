@@ -1,14 +1,17 @@
 package com.strangeone101.platinumarenas.blockentity;
 
+import com.strangeone101.platinumarenas.PlatinumArenas;
 import org.bukkit.Material;
 import org.bukkit.block.TileState;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 public class WrapperRegistry {
 
@@ -60,17 +63,21 @@ public class WrapperRegistry {
 
     private static Material[] getSigns() {
         List<Material> materials = new ArrayList<>();
-        materials.addAll(Arrays.asList(Material.OAK_SIGN, Material.OAK_WALL_SIGN,
-                Material.BIRCH_SIGN, Material.BIRCH_WALL_SIGN,
-                Material.SPRUCE_SIGN, Material.SPRUCE_WALL_SIGN,
-                Material.JUNGLE_SIGN, Material.JUNGLE_WALL_SIGN,
-                Material.DARK_OAK_SIGN, Material.DARK_OAK_WALL_SIGN,
-                Material.ACACIA_SIGN, Material.ACACIA_WALL_SIGN));
 
-        for (String m : new String[] {"crimson_sign", "crimson_wall_sign", "warped_sign",
-                "warped_wall_sign", "mangrove_sign", "mangrove_wall_sign"}) {
-            if (Material.getMaterial(m.toUpperCase(Locale.ENGLISH)) != null) {
-                materials.add(Material.getMaterial(m.toUpperCase(Locale.ENGLISH)));
+        Set<String> woods = new HashSet<>(Arrays.asList("OAK", "BIRCH", "SPRUCE", "JUNGLE", "DARK_OAK", "ACACIA"));
+        if (PlatinumArenas.getMCVersionInt() >= 1160) woods.addAll(Arrays.asList("CRIMSON", "WARPED"));
+        if (PlatinumArenas.getMCVersionInt() >= 1190) woods.add("MANGROVE");
+        if (PlatinumArenas.getMCVersionInt() >= 1193) woods.add("BAMBOO");
+
+        Set<String> types = new HashSet<>(Arrays.asList("SIGN", "WALL_SIGN"));
+        if (PlatinumArenas.getMCVersionInt() >= 1193) types.addAll(Arrays.asList("HANGING_SIGN", "WALL_HANGING_SIGN"));
+
+        for (String wood : woods) {
+            for (String type : types) {
+                String mat = (wood + "_" + type).toUpperCase();
+                if (Material.getMaterial(mat) != null) {
+                    materials.add(Material.getMaterial(mat));
+                }
             }
         }
 

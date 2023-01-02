@@ -114,4 +114,8 @@ public class PlatinumArenas extends JavaPlugin {
 
         return major * 1000 + minor * 10 + fix; //1.16.4 -> 1164; 1.18 -> 1180
     }
+
+    public static int getMCVersionInt() {
+        return getIntVersion(getMCVersion());
+    }
 }
