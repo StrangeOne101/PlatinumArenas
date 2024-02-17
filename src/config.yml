@@ -32,3 +32,7 @@ DisableCompression: false
 # The teleport command suggested to the user from clicking an arena in /arena list
 # Variables: player, x, y, z, world
 TeleportCommandSuggestion: '/tp <x> <y> <z>'
+
+# If an arena is created in an old version and the plugin has not been updated yet, you
+# can enable this to allow the arena to still load anyway.
+IgnoreOutdatedMaterials: false

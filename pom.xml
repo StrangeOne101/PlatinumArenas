@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.strangeone101</groupId>
     <artifactId>PlatinumArenas</artifactId>
-    <version>0.7.4</version>
+    <version>0.7.5</version>
     <repositories>
         <repository>
             <id>bungeecord-repo</id>
@@ -101,16 +101,9 @@
     </build>
     <dependencies>
         <dependency>
-            <groupId>net.md-5</groupId>
-            <artifactId>bungeecord-api</artifactId>
-            <version>1.12-SNAPSHOT</version>
-            <type>jar</type>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>com.mojang</groupId>
             <artifactId>authlib</artifactId>
-            <version>1.5.25</version>
+            <version>3.18.38</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

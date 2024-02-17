@@ -32,6 +32,8 @@ public class ConfigManager {
 
     public static String TELEPORT_COMMAND = "/tp <x> <y> <z>";
 
+    public static boolean IGNORE_OUTDATED_MATERIALS = false;
+
     private static YamlConfiguration config;
 
     public static boolean setup() {
@@ -63,6 +65,8 @@ public class ConfigManager {
             ENABLE_COMPRESSION = !config.getBoolean("DisableCompression", !ENABLE_COMPRESSION);
 
             TELEPORT_COMMAND = config.getString("TeleportCommandSuggestion", TELEPORT_COMMAND);
+
+            IGNORE_OUTDATED_MATERIALS = config.getBoolean("IgnoreOutdatedMaterials", IGNORE_OUTDATED_MATERIALS);
 
             if (RESET_UPDATE_INTERVAL < 0) RESET_UPDATE_INTERVAL = 1;
             if (RESET_UPDATE_PERCENTAGE > 100) RESET_UPDATE_PERCENTAGE = 100F;

@@ -304,6 +304,8 @@ public class ArenaIO {
                     });
 
                     blockData = material + "[" + Util.convertBlockstateData(mapData) + "]";
+                } else if (arenaMCVersion < 1203 && currentMCVersion >= 1203 && material.equalsIgnoreCase("minecraft:grass")) {
+                    blockData = "minecraft:short_grass";
                 }
                 try {
                     BlockData bukkitData = Bukkit.createBlockData(blockData);
@@ -313,9 +315,14 @@ public class ArenaIO {
                     try {
                         blockDataSet.add(Bukkit.createBlockData(blockData.split("\\[")[0])); //One without blockstates
                     } catch (IllegalArgumentException e2) {
-                        PlatinumArenas.INSTANCE.getLogger().severe("Failed to even use the base material! Are you trying to load an arena from another minecraft version?");
-                        PlatinumArenas.INSTANCE.getLogger().severe("Arena \"" + name + "\" will not be loaded.");
-                        e.printStackTrace();
+                        if (ConfigManager.IGNORE_OUTDATED_MATERIALS) {
+                            PlatinumArenas.INSTANCE.getLogger().severe("This block will be skipped. Arena will continue to load.");
+                        } else {
+                            PlatinumArenas.INSTANCE.getLogger().severe("Failed to even use the base material! Are you trying to load an arena from another minecraft version?");
+                            PlatinumArenas.INSTANCE.getLogger().severe("Arena \"" + name + "\" will not be loaded.");
+                            e.printStackTrace();
+                        }
+
                         return null;
                     }
                 }
