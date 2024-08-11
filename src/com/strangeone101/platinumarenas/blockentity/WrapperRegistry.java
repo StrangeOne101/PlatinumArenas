@@ -1,17 +1,16 @@
 package com.strangeone101.platinumarenas.blockentity;
 
 import com.strangeone101.platinumarenas.PlatinumArenas;
+import com.strangeone101.platinumarenas.Util;
 import org.bukkit.Material;
+import org.bukkit.Tag;
 import org.bukkit.block.TileState;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 public class WrapperRegistry {
 
@@ -40,6 +39,8 @@ public class WrapperRegistry {
     }
 
     public static void registerAll() {
+        int mcVersion = PlatinumArenas.getIntVersion(PlatinumArenas.getMCVersion());
+
         register(new SkullWrapper(), Material.PLAYER_HEAD, Material.PLAYER_WALL_HEAD);
         register(new BannerWrapper(), Material.BLACK_BANNER, Material.BLACK_WALL_BANNER,
                 Material.GRAY_BANNER, Material.LIGHT_GRAY_WALL_BANNER,
@@ -57,31 +58,25 @@ public class WrapperRegistry {
                 Material.MAGENTA_BANNER, Material.MAGENTA_WALL_BANNER,
                 Material.PINK_BANNER, Material.PINK_WALL_BANNER,
                 Material.BROWN_BANNER, Material.BROWN_WALL_BANNER);
-        register(new SignWrapper(), getSigns());
+        register(new SignWrapper(), Tag.ALL_SIGNS.getValues().toArray(new Material[0]));
         register(new BeaconWrapper(), Material.BEACON);
-    }
+        register(new PotWrapper(), Material.DECORATED_POT);
 
-    private static Material[] getSigns() {
-        List<Material> materials = new ArrayList<>();
+        if (Util.isPaperSupported()) { //Only do the following if Paper is being used due to paper API required
+            List<Material> chests = new ArrayList<>();
+            chests.addAll(Arrays.asList(Material.CHEST, Material.TRAPPED_CHEST, Material.BARREL,
+                    Material.HOPPER, Material.DROPPER, Material.DISPENSER));
+            chests.addAll(Tag.SHULKER_BOXES.getValues());
+            register(new ChestWrapper(), chests.toArray(new Material[0]));
+            register(new FurnaceWrapper(), Material.FURNACE, Material.SMOKER, Material.BLAST_FURNACE);
+            register(new BrewingStandWrapper(), Material.BREWING_STAND);
+            register(new LecternWrapper(), Material.LECTERN);
 
-        Set<String> woods = new HashSet<>(Arrays.asList("OAK", "BIRCH", "SPRUCE", "JUNGLE", "DARK_OAK", "ACACIA"));
-        if (PlatinumArenas.getMCVersionInt() >= 1160) woods.addAll(Arrays.asList("CRIMSON", "WARPED"));
-        if (PlatinumArenas.getMCVersionInt() >= 1190) woods.add("MANGROVE");
-        if (PlatinumArenas.getMCVersionInt() >= 1193) woods.add("BAMBOO");
-
-        Set<String> types = new HashSet<>(Arrays.asList("SIGN", "WALL_SIGN"));
-        if (PlatinumArenas.getMCVersionInt() >= 1193) types.addAll(Arrays.asList("HANGING_SIGN", "WALL_HANGING_SIGN"));
-
-        for (String wood : woods) {
-            for (String type : types) {
-                String mat = (wood + "_" + type).toUpperCase();
-                if (Material.getMaterial(mat) != null) {
-                    materials.add(Material.getMaterial(mat));
-                }
+            if (mcVersion >= 1210) {
+                register(new BookshelfWrapper(), Material.CHISELED_BOOKSHELF);
+                register(new CrafterWrapper(), Material.CRAFTER);
             }
         }
-
-        return materials.toArray(new Material[0]);
     }
 
     public static int getId(Wrapper wrapper) {

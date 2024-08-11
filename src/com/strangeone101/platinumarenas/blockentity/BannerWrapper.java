@@ -83,5 +83,13 @@ public class BannerWrapper implements Wrapper<Banner, BannerWrapper.InternalBann
     protected static class InternalBanner {
         private DyeColor color;
         private List<Pattern> patterns = new ArrayList<>();
+
+        @Override
+        public String toString() {
+            return "InternalBanner{" +
+                    "color=" + color +
+                    ", patterns=" + patterns +
+                    '}';
+        }
     }
 }

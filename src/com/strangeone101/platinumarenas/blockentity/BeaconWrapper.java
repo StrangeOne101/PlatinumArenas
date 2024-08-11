@@ -78,5 +78,13 @@ public class BeaconWrapper implements Wrapper<Beacon, BeaconWrapper.InternalBeac
 
     public static class InternalBeacon {
         PotionEffectType first, second;
+
+        @Override
+        public String toString() {
+            return "InternalBeacon{" +
+                    "first=" + first +
+                    ", second=" + second +
+                    '}';
+        }
     }
 }
