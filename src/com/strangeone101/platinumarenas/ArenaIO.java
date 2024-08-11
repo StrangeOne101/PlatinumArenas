@@ -3,7 +3,7 @@ package com.strangeone101.platinumarenas;
 import com.google.common.collect.Maps;
 import com.strangeone101.platinumarenas.blockentity.Wrapper;
 import com.strangeone101.platinumarenas.blockentity.WrapperRegistry;
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bukkit.Bukkit;

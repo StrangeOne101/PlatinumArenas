@@ -3,7 +3,7 @@ package com.strangeone101.platinumarenas;
 import com.strangeone101.platinumarenas.blockentity.Wrapper;
 import com.strangeone101.platinumarenas.blockentity.WrapperRegistry;
 import com.strangeone101.platinumarenas.commands.DebugCommand;
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bukkit.ChatColor;
@@ -581,21 +581,44 @@ public class Arena {
             short blockKeyIndex = (short)keyList.indexOf(loc.getBlock().getBlockData());
             //PlatinumArenas.INSTANCE.getLogger().info("Debug6: Index of " + loc.getBlock().getBlockData().getAsString() + " is " + index + "(" + keyList.indexOf(loc.getBlock().getBlockData()) + ")");
 
+            Wrapper wrapper = WrapperRegistry.getFromMaterial(loc.getBlock().getType());
+            //Test if the block has custom NBT
+            PlatinumArenas.INSTANCE.getLogger().info("Debug: Wrapper is " + wrapper + " for " + loc.getBlock().getType() + " index " + data.index);
+            boolean blank = wrapper != null && loc.getBlock().getState() instanceof TileState && wrapper.isBlank((TileState) (loc.getBlock().getState()));
+
             if (data.blockTypes.length == 0) {
                 data.blockAmounts = new short[] {1};
                 data.blockTypes = new short[] {blockKeyIndex};
                 //PlatinumArenas.INSTANCE.getLogger().info("Debug4: Creating array thingies");
                 if (keyList.size() > data.arena.keys.length) data.arena.addKeys(keyList);
+
+                //Record the NBT if it has any
+                if (wrapper != null && loc.getBlock().getState() instanceof TileState && !blank) {
+                    Object cache = wrapper.cache((TileState) loc.getBlock().getState()); //Cache the NBT from the tilestate
+                    PlatinumArenas.INSTANCE.getLogger().info("Debug: Cache is " + cache + " for " + loc.getBlock().getType());
+                    data.NBT.put(data.index, new ImmutablePair<>(wrapper, cache)); //Store in the section that the current block has the current NBT
+                }
+
                 data.totalBlocks++;
                 data.index++;
                 updatePlayerCreate(player, data);
                 continue;
             }
 
+
+
             if (data.blockTypes[data.blockTypes.length - 1] == blockKeyIndex) { //If the last block recorded is the same type
                 data.blockAmounts[data.blockAmounts.length - 1] = (short) (data.blockAmounts[data.blockAmounts.length - 1] + 1);
                 //PlatinumArenas.INSTANCE.getLogger().info("Debug5: Same type. Amount is now " + data.blockAmounts[data.blockAmounts.length - 1]);
                 if (keyList.size() > data.arena.keys.length) data.arena.addKeys(keyList);
+
+                //Record the NBT if it has any
+                if (wrapper != null && loc.getBlock().getState() instanceof TileState && !blank) {
+                    Object cache = wrapper.cache((TileState) loc.getBlock().getState()); //Cache the NBT from the tilestate
+                    PlatinumArenas.INSTANCE.getLogger().info("Debug: Cache is " + cache + " for " + loc.getBlock().getType());
+                    data.NBT.put(data.index, new ImmutablePair<>(wrapper, cache)); //Store in the section that the current block has the current NBT
+                }
+
                 data.index++;
                 data.totalBlocks++;
                 updatePlayerCreate(player, data);
@@ -604,14 +627,14 @@ public class Arena {
                     data.blockTypes = ArrayUtils.add(data.blockTypes, blockKeyIndex); //Add the same type to the array so we can start the count again from 0
                     data.blockAmounts = ArrayUtils.add(data.blockAmounts, (short)0); //Start the count from 0 again
                 }
+
                 continue;
             }
 
-            Wrapper wrapper = WrapperRegistry.getFromMaterial(loc.getBlock().getType());
-            //Test if the block has custom NBT
-            if (wrapper != null && loc.getBlock().getState() instanceof TileState && !wrapper.isBlank((TileState) loc.getBlock().getState())) {
+            PlatinumArenas.INSTANCE.getLogger().info("Debug: Blank is " + blank + " for " + loc.getBlock().getType());
+            if (wrapper != null && loc.getBlock().getState() instanceof TileState && !blank) {
                 Object cache = wrapper.cache((TileState) loc.getBlock().getState()); //Cache the NBT from the tilestate
-
+                PlatinumArenas.INSTANCE.getLogger().info("Debug: Cache is " + cache + " for " + loc.getBlock().getType());
                 data.NBT.put(data.index, new ImmutablePair<>(wrapper, cache)); //Store in the section that the current block has the current NBT
             }
 

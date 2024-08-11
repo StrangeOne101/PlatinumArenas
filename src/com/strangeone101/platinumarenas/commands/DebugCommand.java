@@ -261,8 +261,8 @@ public class DebugCommand extends ArenaCommand {
         lines.add(" = NBT Blocks = ");
         for (int index : section.getNBTCache().keySet()) {
             Pair<Wrapper, Object> nbt = section.getNBTCache().get(index);
-            String clazz = nbt.getKey().getTileClass().toGenericString();
-            String data = new String(nbt.getKey().write(nbt.getRight()), StandardCharsets.US_ASCII);
+            String clazz = nbt.getKey().getTileClass().getSimpleName();
+            String data = nbt.getRight().toString();
 
             lines.add(clazz + "=" + data);
         }

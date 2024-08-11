@@ -24,6 +24,8 @@ import java.util.zip.Inflater;
 
 public class Util {
 
+    private static Boolean paperCache;
+
     public static boolean isMatch(byte[] pattern, byte[] input, int pos) {
         if (pos + (pattern.length - 1) > input.length) return false;
         for(int i=0; i< pattern.length; i++) {
@@ -200,16 +202,22 @@ public class Util {
         return mapData.keySet().stream().map(key -> key + "=" + mapData.get(key)).collect(Collectors.joining(","));
     }
 
-    /**
-     * Returns the version of your server
-     *
-     * @return The server version
-     */
-    public static String getServerVersion() {
-        return Bukkit.getServer().getClass().getPackage().getName().substring(23);
+    public static String getCraftbukkitClass(String key) {
+        return Bukkit.getServer().getClass().getPackage().getName() + "." + key;
     }
 
-    public static String getCraftbukkitClass(String key) {
-        return "org.bukkit.craftbukkit." + getServerVersion() + "." + key;
+    public static boolean isPaperSupported() {
+        if (paperCache != null) return paperCache;
+
+        try {
+            Class.forName("com.destroystokyo.paper.PaperConfig");
+            PlatinumArenas.INSTANCE.getLogger().info("Paper detected! Using Paper API for better performance.");
+            paperCache = true;
+            return true;
+        } catch (ClassNotFoundException e) {
+            PlatinumArenas.INSTANCE.getLogger().info("Paper not detected! Falling back to Bukkit API.");
+            paperCache = false;
+            return false;
+        }
     }
 }
