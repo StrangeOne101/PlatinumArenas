@@ -1,25 +1,20 @@
 package com.strangeone101.platinumarenas.blockentity;
 
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
+import com.strangeone101.platinumarenas.buffers.SmartReader;
+import com.strangeone101.platinumarenas.buffers.SmartWriter;
 import org.bukkit.block.Beacon;
 import org.bukkit.potion.PotionEffectType;
-
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 
 public class BeaconWrapper implements Wrapper<Beacon, BeaconWrapper.InternalBeacon> {
 
     @Override
     public byte[] write(InternalBeacon cache) {
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        byte[] effect1 = cache.first.getName().getBytes(StandardCharsets.US_ASCII);
-        byte[] effect2 = cache.second == null ? new byte[0] : cache.first.getName().getBytes(StandardCharsets.US_ASCII);
+        SmartWriter out = new SmartWriter();
+        String effect1 = cache.first.getKey().asString();
+        String effect2 = cache.second == null ? "" : cache.second.getKey().asString();
 
-        out.write((byte)effect1.length);
-        out.write(effect1);
-        out.write((byte)effect2.length);
-        if (effect2.length > 0) out.write(effect2);
+        out.writeString(effect1);
+        out.writeString(effect2);
 
         return out.toByteArray();
     }
@@ -27,7 +22,7 @@ public class BeaconWrapper implements Wrapper<Beacon, BeaconWrapper.InternalBeac
     @Override
     public InternalBeacon cache(Beacon baseTileState) {
         InternalBeacon cache = new InternalBeacon();
-        cache.first = baseTileState.getPrimaryEffect() == null ? null :baseTileState.getPrimaryEffect().getType();
+        cache.first = baseTileState.getPrimaryEffect() == null ? null : baseTileState.getPrimaryEffect().getType();
         cache.second = baseTileState.getSecondaryEffect() == null ? null : baseTileState.getSecondaryEffect().getType();
 
         if (cache.second == null && baseTileState.getPrimaryEffect().getAmplifier() > 0) {
@@ -38,23 +33,14 @@ public class BeaconWrapper implements Wrapper<Beacon, BeaconWrapper.InternalBeac
 
     @Override
     public InternalBeacon read(byte[] bytes) {
-        ByteBuffer buff = ByteBuffer.allocate(bytes.length);
-        buff.put(bytes);
-        buff.position(0);
+        SmartReader buff = new SmartReader(bytes);
 
-        int length = buff.get();
-        byte[] effect1 = new byte[length];
-        for (int i = 0; i < length; i++) effect1[i] = buff.get();
-        String effect1S = new String(effect1, StandardCharsets.US_ASCII);
-
-        int length2 = buff.get();
-        byte[] effect2 = new byte[length2];
-        for (int i = 0; i < length2; i++) effect2[i] = buff.get();
-        String effect2S = new String(effect2, StandardCharsets.US_ASCII);
+        String effect1 = buff.getString();
+        String effect2 = buff.getString();
 
         InternalBeacon cache = new InternalBeacon();
-        cache.first = PotionEffectType.getByName(effect1S);
-        cache.second = PotionEffectType.getByName(effect2S);
+        cache.first = effect1.isEmpty() ? null : PotionEffectType.getByName(effect1);
+        cache.second = effect2.isEmpty() ? null : PotionEffectType.getByName(effect2);
 
         return cache;
     }
@@ -81,7 +67,7 @@ public class BeaconWrapper implements Wrapper<Beacon, BeaconWrapper.InternalBeac
 
         @Override
         public String toString() {
-            return "InternalBeacon{" +
+            return "BeaconData{" +
                     "first=" + first +
                     ", second=" + second +
                     '}';

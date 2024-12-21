@@ -2,6 +2,9 @@ package com.strangeone101.platinumarenas.blockentity;
 
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
+import com.strangeone101.platinumarenas.PlatinumArenas;
+import com.strangeone101.platinumarenas.buffers.SmartReader;
+import com.strangeone101.platinumarenas.buffers.SmartWriter;
 import org.bukkit.Material;
 import org.bukkit.block.Container;
 import org.bukkit.inventory.ItemStack;
@@ -15,24 +18,22 @@ public abstract class ContainerWrapper<C extends Container, I extends ContainerW
 
     @Override
     public byte[] write(I cache) {
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        SmartWriter out = new SmartWriter();
 
-        byte[] lockBytes = cache.lock == null ? new byte[0] : cache.lock.getBytes();
-        out.writeInt(lockBytes.length);
-        out.write(lockBytes);
+        out.writeString(cache.lock);
 
         //Write the custom name
-        out.write(cache.customName == null ? 0 : cache.customName.getBytes().length);
-        if (cache.customName != null) out.write(cache.customName.getBytes());
+        out.writeString(cache.customName);
 
+        PlatinumArenas.debug("Writing " + cache.items.size() + " items");
+        out.writeByte(cache.items.size());
 
-        out.writeInt(cache.items.size());
-
-        for (Map.Entry<Integer, ItemStack> entry : (Set<Map.Entry<Integer, ItemStack>>) cache.items.entrySet()) {
-            out.writeInt(entry.getKey());
+        for (Map.Entry<Byte, ItemStack> entry : (Set<Map.Entry<Byte, ItemStack>>) cache.items.entrySet()) {
+            out.writeByte(entry.getKey());
+            PlatinumArenas.debug("Writing slot " + entry.getKey());
             byte[] itemBytes = entry.getValue().serializeAsBytes();
-            out.writeInt(itemBytes.length);
-            out.write(itemBytes);
+            PlatinumArenas.debug("Writing " + itemBytes.length + " bytes");
+            out.writeByteArray(itemBytes);
         }
 
         return out.toByteArray();
@@ -40,30 +41,20 @@ public abstract class ContainerWrapper<C extends Container, I extends ContainerW
 
     @Override
     public I read(byte[] bytes) {
-        ByteBuffer buffer = ByteBuffer.allocate(bytes.length);
+        SmartReader buffer = new SmartReader(bytes);
         I container = create();
 
-        int lockLength = buffer.getInt(); //Get the lock string
-        if (lockLength > 0) {
-            byte[] lockBytes = new byte[lockLength];
-            buffer.get(lockBytes);
-            container.lock = new String(lockBytes);
-        }
+        container.lock = buffer.getString();
 
-        int length = buffer.getInt();
-        if (length > 0) {
-            byte[] nameBytes = new byte[length];
-            buffer.get(nameBytes);
-            container.customName = new String(nameBytes);
-        }
+        container.customName = buffer.getString();
 
-        int mapLength = buffer.getInt();
+        byte mapLength = buffer.get();
+        PlatinumArenas.debug("Reading " + mapLength + " items");
         for (int i = 0; i < mapLength; i++) {
-            int slot = buffer.getInt();
-            int itemLength = buffer.getInt();
-            byte[] itemBytes = new byte[itemLength];
-            buffer.get(itemBytes);
-            container.items.put(slot, ItemStack.deserializeBytes(itemBytes));
+            byte slot = buffer.get();
+            ItemStack stack = ItemStack.deserializeBytes(buffer.getByteArray());
+            container.items.put(slot, stack);
+            PlatinumArenas.INSTANCE.getLogger().info("Loaded " + stack + " on slot " + slot);
         }
 
         return container;
@@ -75,10 +66,14 @@ public abstract class ContainerWrapper<C extends Container, I extends ContainerW
         container.lock = baseTileState.getLock();
         container.customName = baseTileState.getCustomName();
         container.items = new HashMap<>();
-        for (int i = 0; i < baseTileState.getInventory().getContents().length; i++) {
-            ItemStack stack = baseTileState.getInventory().getContents()[i];
-            if (stack == null || stack.getType() == Material.AIR) continue;
-            container.items.put(i, stack);
+        int max = Math.min(127, baseTileState.getSnapshotInventory().getContents().length); //Just in case some mod made over 128 items in one container
+
+        PlatinumArenas.debug("" + max + " items being cached");
+        for (byte i = 0; i < max; i++) {
+            ItemStack stack = baseTileState.getSnapshotInventory().getContents()[i];
+            if (stack == null || stack.getType().isEmpty()) continue;
+            PlatinumArenas.debug("item is " + stack.toString() + " in slot " + i);
+            container.items.put(i, stack.clone());
         }
         return container;
     }
@@ -87,17 +82,19 @@ public abstract class ContainerWrapper<C extends Container, I extends ContainerW
     public C place(C baseTileState, I cache) {
         baseTileState.setLock(cache.lock);
         baseTileState.setCustomName(cache.customName);
-        ItemStack[] contents = baseTileState.getInventory().getContents();
-        for (Map.Entry<Integer, ItemStack> entry : (Set<Map.Entry<Integer, ItemStack>>) cache.items.entrySet()) {
-            contents[entry.getKey()] = entry.getValue();
+        ItemStack[] contents = new ItemStack[baseTileState.getSnapshotInventory().getContents().length];
+        PlatinumArenas.debug("placing " + cache.items.size());
+        for (Map.Entry<Byte, ItemStack> entry : (Set<Map.Entry<Byte, ItemStack>>) cache.items.entrySet()) {
+            contents[entry.getKey()] = entry.getValue().clone();
+            PlatinumArenas.debug("item placed is " + entry.getValue().toString() + " in slot " + entry.getKey());
         }
-        baseTileState.getInventory().setContents(contents);
+        baseTileState.getSnapshotInventory().setContents(contents);
 
         return baseTileState;
     }
 
     public class InternalContainer {
-        public Map<Integer, ItemStack> items;
+        public Map<Byte, ItemStack> items = new HashMap<>();
         public String lock;
         public String customName;
     }

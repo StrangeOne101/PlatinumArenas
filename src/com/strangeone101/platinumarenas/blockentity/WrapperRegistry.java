@@ -60,7 +60,10 @@ public class WrapperRegistry {
                 Material.BROWN_BANNER, Material.BROWN_WALL_BANNER);
         register(new SignWrapper(), Tag.ALL_SIGNS.getValues().toArray(new Material[0]));
         register(new BeaconWrapper(), Material.BEACON);
-        register(new PotWrapper(), Material.DECORATED_POT);
+
+        if (mcVersion >= 1200) {
+            register(new PotWrapper(), Material.DECORATED_POT);
+        }
 
         if (Util.isPaperSupported()) { //Only do the following if Paper is being used due to paper API required
             List<Material> chests = new ArrayList<>();
@@ -71,9 +74,13 @@ public class WrapperRegistry {
             register(new FurnaceWrapper(), Material.FURNACE, Material.SMOKER, Material.BLAST_FURNACE);
             register(new BrewingStandWrapper(), Material.BREWING_STAND);
             register(new LecternWrapper(), Material.LECTERN);
+            register(new CampfireWrapper(), Material.CAMPFIRE, Material.SOUL_CAMPFIRE);
+
+            if (mcVersion >= 1193) {
+                register(new BookshelfWrapper(), Material.CHISELED_BOOKSHELF);
+            }
 
             if (mcVersion >= 1210) {
-                register(new BookshelfWrapper(), Material.CHISELED_BOOKSHELF);
                 register(new CrafterWrapper(), Material.CRAFTER);
             }
         }

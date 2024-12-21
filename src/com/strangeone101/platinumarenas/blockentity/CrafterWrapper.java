@@ -2,20 +2,19 @@ package com.strangeone101.platinumarenas.blockentity;
 
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
+import com.strangeone101.platinumarenas.buffers.SmartReader;
+import com.strangeone101.platinumarenas.buffers.SmartWriter;
 import org.apache.commons.lang3.BitField;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
-import org.bukkit.block.Container;
 import org.bukkit.block.Crafter;
 import org.bukkit.loot.LootTable;
 import org.bukkit.loot.Lootable;
 
-import java.nio.ByteBuffer;
-import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CrafterWrapper extends ContainerWrapper<Crafter, CrafterWrapper.InternalContainer> {
+public class CrafterWrapper extends LootableContainerWrapper<Crafter, CrafterWrapper.InternalContainer> {
 
     static Map<Integer, BitField> bitFields = new HashMap<>();
 
@@ -35,34 +34,24 @@ public class CrafterWrapper extends ContainerWrapper<Crafter, CrafterWrapper.Int
     @Override
     public byte[] write(InternalContainer cache) {
         byte[] container = super.write(cache);
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        byte[] lootTable = cache.table == null ? new byte[0] : cache.table.getKey().toString().getBytes();
-        out.writeInt(lootTable.length);
-        out.write(lootTable);
+        SmartWriter out = new SmartWriter();
         out.writeInt(cache.craftingTicks);
         out.writeShort(getLockedSlotsCompressed(cache.triggered, cache.lockedSlots));
-        out.write(container);
+        out.writeByteArray(container);
 
-        return container;
+        return out.toByteArray();
     }
 
     @Override
     public InternalContainer read(byte[] bytes) {
-        ByteBuffer buffer = ByteBuffer.allocate(bytes.length);
-
-        int loottableLength = buffer.getInt();
-        byte[] loottableBytes = new byte[loottableLength];
-        buffer.get(loottableBytes);
-        String loottableString = new String(loottableBytes);
+        SmartReader buffer = new SmartReader(bytes);
 
         int craftingTicks = buffer.getInt();
         short lockedSlots = buffer.getShort();
 
-        byte[] containerBytes = new byte[bytes.length - (loottableLength + 4 + 2 + 4)];
-        buffer.get(containerBytes);
+        byte[] containerBytes = buffer.getByteArray();
 
         InternalContainer container = super.read(containerBytes);
-        container.table = loottableString.isEmpty() ? null : Bukkit.getLootTable(NamespacedKey.fromString(loottableString));
         container.craftingTicks = craftingTicks;
         container.lockedSlots = getLockedSlotsFromCompressed(lockedSlots);
         container.triggered = bitFields.get(0).getShortValue(lockedSlots) == 1;
@@ -72,7 +61,6 @@ public class CrafterWrapper extends ContainerWrapper<Crafter, CrafterWrapper.Int
     @Override
     public InternalContainer cache(Crafter baseTileState) {
         InternalContainer container = super.cache(baseTileState);
-        container.table = ((Lootable)baseTileState).getLootTable();
         container.craftingTicks = baseTileState.getCraftingTicks();
         container.triggered = baseTileState.isTriggered();
         container.lockedSlots = new HashMap<>();
@@ -85,7 +73,6 @@ public class CrafterWrapper extends ContainerWrapper<Crafter, CrafterWrapper.Int
     @Override
     public Crafter place(Crafter baseTileState, InternalContainer cache) {
         baseTileState = super.place(baseTileState, cache);
-        ((Lootable)baseTileState).setLootTable(cache.table);
         baseTileState.setCraftingTicks(cache.craftingTicks);
         baseTileState.setTriggered(cache.triggered);
 
@@ -131,16 +118,15 @@ public class CrafterWrapper extends ContainerWrapper<Crafter, CrafterWrapper.Int
     }
 
 
-    public class InternalContainer extends ContainerWrapper.InternalContainer {
-        public LootTable table;
+    public class InternalContainer extends LootableContainerWrapper.InternalContainer {
         public int craftingTicks;
         public boolean triggered;
         public Map<Integer, Boolean> lockedSlots = new HashMap<>();
 
         @Override
         public String toString() {
-            return "InternalContainer{" +
-                    "table=" + table +
+            return "CrafterData{" +
+                    "table=" + lootTable +
                     ", craftingTicks=" + craftingTicks +
                     ", triggered=" + triggered +
                     ", lockedSlots=" + lockedSlots +

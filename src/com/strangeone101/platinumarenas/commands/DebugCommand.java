@@ -129,7 +129,7 @@ public class DebugCommand extends ArenaCommand {
                     lines.add(":::End section");
                 }
 
-                byte[] bytes = String.join("\n", lines).getBytes(StandardCharsets.US_ASCII);
+                byte[] bytes = String.join("\n", lines).getBytes();
                 File file = new File(PlatinumArenas.INSTANCE.getDataFolder(), "debug_arena_" + arena.getName() + ".txt");
                 try {
                     Files.write(bytes, file);
@@ -162,7 +162,7 @@ public class DebugCommand extends ArenaCommand {
             lines.add("Parent Arena: " + arena.getName());
             lines.addAll(getSectionLines(arena, arena.getSections().get(sectionID)));
 
-            byte[] bytes = String.join("\n", lines).getBytes(StandardCharsets.US_ASCII);
+            byte[] bytes = String.join("\n", lines).getBytes();
             File file = new File(PlatinumArenas.INSTANCE.getDataFolder(), "debug_section_" + sectionID + ".txt");
             try {
                 Files.write(bytes, file);

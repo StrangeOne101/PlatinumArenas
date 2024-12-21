@@ -3,6 +3,8 @@ package com.strangeone101.platinumarenas.blockentity;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import com.strangeone101.platinumarenas.PlatinumArenas;
+import com.strangeone101.platinumarenas.buffers.SmartReader;
+import com.strangeone101.platinumarenas.buffers.SmartWriter;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.DyeColor;
 import org.bukkit.block.Sign;
@@ -27,26 +29,24 @@ public class SignWrapper implements Wrapper<Sign, SignWrapper.InternalSign> {
 
     @Override
     public byte[] write(InternalSign sign) {
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        SmartWriter out = new SmartWriter();
         byte color = (byte)sign.color.ordinal();
 
         if (sign.glow) {
             color += Byte.MAX_VALUE;
         }
 
-        out.write(color);
-        out.write((byte)sign.lines.size());
+        out.writeByte(color);
+        out.writeByte((byte)sign.lines.size());
         for (String s : sign.lines) {
-            byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
-            out.writeInt(bytes.length);
-            out.write(bytes);
+            out.writeString(s);
         }
         byte backColor = (byte)sign.backColor.ordinal();
 
         if (sign.backGlow) {
             backColor += Byte.MAX_VALUE;
         }
-        out.write(backColor);
+        out.writeByte(backColor);
 
         return out.toByteArray();
     }
@@ -79,8 +79,7 @@ public class SignWrapper implements Wrapper<Sign, SignWrapper.InternalSign> {
 
     @Override
     public InternalSign read(byte[] bytes) {
-        ByteBuffer buffer = ByteBuffer.wrap(bytes);
-        buffer.position(0);
+        SmartReader buffer = new SmartReader(bytes);
 
         InternalSign cache = new InternalSign();
 
@@ -95,12 +94,7 @@ public class SignWrapper implements Wrapper<Sign, SignWrapper.InternalSign> {
         int length = buffer.get();
 
         for (int i = 0; i < length; i++) {
-            int stringLength = buffer.getInt();
-            byte[] byteArray = new byte[stringLength];
-            for (int j = 0; j < stringLength; j++) {
-                byteArray[j] = buffer.get();
-            }
-            String line = new String(byteArray, StandardCharsets.UTF_8);
+            String line = buffer.getString();
             cache.lines.add(line);
         }
 
@@ -152,7 +146,7 @@ public class SignWrapper implements Wrapper<Sign, SignWrapper.InternalSign> {
 
         @Override
         public String toString() {
-            return "InternalSign{" +
+            return "SignData{" +
                     "color=" + color +
                     ", backColor=" + backColor +
                     ", lines=" + lines +

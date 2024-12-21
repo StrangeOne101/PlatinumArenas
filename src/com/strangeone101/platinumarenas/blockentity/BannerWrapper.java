@@ -1,6 +1,10 @@
 package com.strangeone101.platinumarenas.blockentity;
 
+import com.strangeone101.platinumarenas.buffers.SmartReader;
+import com.strangeone101.platinumarenas.buffers.SmartWriter;
 import org.bukkit.DyeColor;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.block.Banner;
 import org.bukkit.block.TileState;
 import org.bukkit.block.banner.Pattern;
@@ -15,20 +19,16 @@ public class BannerWrapper implements Wrapper<Banner, BannerWrapper.InternalBann
 
     @Override
     public byte[] write(InternalBanner banner) {
-        ByteBuffer bb = ByteBuffer.allocate(2 + (banner.patterns.size() * 4));
-        bb.put((byte)banner.color.ordinal());
-        bb.put((byte)banner.patterns.size());
+        SmartWriter bb = new SmartWriter();
+        bb.writeByte((byte)banner.color.ordinal());
+        bb.writeByte((byte)banner.patterns.size());
 
         for (Pattern pattern : banner.patterns) {
-            String identifier = pattern.getPattern().getIdentifier();
-            while (identifier.length() < 3) {
-                identifier = identifier + " ";
-            }
-            bb.put((byte)pattern.getColor().ordinal());
-            byte[] identifierBytes = identifier.getBytes(StandardCharsets.US_ASCII);
-            for (byte b : identifierBytes) bb.put(b);
+            String identifier = pattern.getPattern().getKey().asString();
+            bb.writeByte((byte)pattern.getColor().ordinal());
+            bb.writeString(identifier);
         }
-        return bb.array();
+        return bb.toByteArray();
     }
 
     @Override
@@ -41,9 +41,7 @@ public class BannerWrapper implements Wrapper<Banner, BannerWrapper.InternalBann
 
     @Override
     public InternalBanner read(byte[] bytes) {
-        ByteBuffer buffer = ByteBuffer.allocate(bytes.length);
-        buffer.put(bytes);
-        buffer.position(0);
+        SmartReader buffer = new SmartReader(bytes);
 
         InternalBanner banner = new InternalBanner();
 
@@ -54,9 +52,8 @@ public class BannerWrapper implements Wrapper<Banner, BannerWrapper.InternalBann
 
         for (int i = 0; i < amount; i++) {
             color = DyeColor.values()[buffer.get()];
-            byte[] idBytes = {buffer.get(), buffer.get(), buffer.get()};
-            String id = new String(idBytes, StandardCharsets.US_ASCII).trim();
-            Pattern pattern = new Pattern(color, PatternType.getByIdentifier(id));
+            String id = buffer.getString();
+            Pattern pattern = new Pattern(color, Registry.BANNER_PATTERN.get(NamespacedKey.fromString(id)));
             banner.patterns.add(pattern);
         }
 
@@ -86,7 +83,7 @@ public class BannerWrapper implements Wrapper<Banner, BannerWrapper.InternalBann
 
         @Override
         public String toString() {
-            return "InternalBanner{" +
+            return "BannerData{" +
                     "color=" + color +
                     ", patterns=" + patterns +
                     '}';

@@ -1,35 +1,32 @@
 package com.strangeone101.platinumarenas.blockentity;
 
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
+import com.strangeone101.platinumarenas.buffers.SmartReader;
+import com.strangeone101.platinumarenas.buffers.SmartWriter;
 import org.bukkit.block.Furnace;
-
-import java.nio.ByteBuffer;
 
 public class FurnaceWrapper extends ContainerWrapper<Furnace, FurnaceWrapper.InternalContainer> {
 
     @Override
     public byte[] write(InternalContainer cache) {
         byte[] container = super.write(cache);
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        SmartWriter out = new SmartWriter();
         out.writeShort(cache.cookTime);
         out.writeShort(cache.burnTime);
         out.writeDouble(cache.multiplier);
-        out.write(container);
+        out.writeByteArray(container);
 
-        return container;
+        return out.toByteArray();
     }
 
     @Override
     public InternalContainer read(byte[] bytes) {
-        ByteBuffer buffer = ByteBuffer.allocate(bytes.length);
+        SmartReader buffer = new SmartReader(bytes);
 
         short cookTime = buffer.getShort();
         short burnTime = buffer.getShort();
         double multiplier = buffer.getDouble();
 
-        byte[] containerBytes = new byte[bytes.length - (2 + 2 + 8)];
-        buffer.get(containerBytes);
+        byte[] containerBytes = buffer.getByteArray();
 
         InternalContainer container = super.read(containerBytes);
         container.burnTime = burnTime;
@@ -70,7 +67,6 @@ public class FurnaceWrapper extends ContainerWrapper<Furnace, FurnaceWrapper.Int
     public boolean isBlank(Furnace tileState) {
         return tileState.getBurnTime() == 0 && tileState.getCookTime() == 0 && tileState.getInventory().isEmpty();
     }
-
 
     public class InternalContainer extends ContainerWrapper.InternalContainer {
         public double multiplier;

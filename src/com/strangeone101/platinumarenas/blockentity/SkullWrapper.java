@@ -1,17 +1,15 @@
 package com.strangeone101.platinumarenas.blockentity;
 
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.PropertyMap;
 import com.strangeone101.platinumarenas.Util;
+import com.strangeone101.platinumarenas.buffers.SmartReader;
+import com.strangeone101.platinumarenas.buffers.SmartWriter;
 import org.bukkit.block.Skull;
 
 import java.lang.reflect.Field;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 public class SkullWrapper implements Wrapper<Skull, GameProfile> {
@@ -35,22 +33,17 @@ public class SkullWrapper implements Wrapper<Skull, GameProfile> {
 
     @Override
     public byte[] write(GameProfile gameProfile) {
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        SmartWriter out = new SmartWriter();
 
         //Write UUID
-        out.writeLong(gameProfile.getId().getLeastSignificantBits());
-        out.writeLong(gameProfile.getId().getMostSignificantBits());
+        out.writeUUID(gameProfile.getId());
 
         //Write the name length + name
-        byte[] nameBytes = gameProfile.getName() == null ? new byte[0] : gameProfile.getName().getBytes(StandardCharsets.US_ASCII);
-        out.writeByte(nameBytes.length);
-        out.write(nameBytes);
+        out.writeString(gameProfile.getName());
 
         //Write properties
         String propertyString = new PropertyMap.Serializer().serialize(gameProfile.getProperties(), null, null).toString();
-        byte[] propertyBytes = propertyString.getBytes(StandardCharsets.US_ASCII);
-        out.writeInt(propertyBytes.length);
-        out.write(propertyBytes);
+        out.writeString(propertyString);
 
         return out.toByteArray();
     }
@@ -67,22 +60,13 @@ public class SkullWrapper implements Wrapper<Skull, GameProfile> {
 
     @Override
     public GameProfile read(byte[] bytes) {
-        ByteBuffer buffer = ByteBuffer.allocate(bytes.length);
-        buffer.put(bytes);
-        buffer.position(0);
+        SmartReader buffer = new SmartReader(bytes);
 
-        long least = buffer.getLong(); //Get UUID
-        long most = buffer.getLong();
-        UUID id = new UUID(most, least);
+        UUID id = buffer.getUUID();
 
-        byte[] nameBytes = new byte[buffer.get()]; //Get name length
-        for (int i = 0; i < nameBytes.length; i++) nameBytes[i] = buffer.get();
-        String name = new String(nameBytes, StandardCharsets.US_ASCII); //Get name from bytes
+        String name = buffer.getString();
 
-        byte[] propertyBytes = new byte[buffer.getInt()]; //Get properties length
-        for (int i = 0; i < propertyBytes.length; i++) propertyBytes[i] = buffer.get();
-
-        String propertyString = new String(propertyBytes, StandardCharsets.US_ASCII); //Get property bytes to string
+        String propertyString = buffer.getString();
         JsonElement element = new JsonParser().parse(propertyString); //Parse as JSON
         PropertyMap properties = new PropertyMap.Serializer().deserialize(element, null, null); //To object
 

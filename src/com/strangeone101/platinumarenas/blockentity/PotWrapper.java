@@ -4,6 +4,8 @@ import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import com.strangeone101.platinumarenas.Util;
+import com.strangeone101.platinumarenas.buffers.SmartReader;
+import com.strangeone101.platinumarenas.buffers.SmartWriter;
 import org.bukkit.Material;
 import org.bukkit.block.DecoratedPot;
 import org.bukkit.inventory.ItemStack;
@@ -13,15 +15,15 @@ import java.io.ByteArrayInputStream;
 public class PotWrapper implements Wrapper<DecoratedPot, PotWrapper.InternalPot> {
     @Override
     public byte[] write(PotWrapper.InternalPot cache) {
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
-        out.writeUTF(cache.left.getKey().toString()); //Left
-        out.writeUTF(cache.right.getKey().toString()); //Right
-        out.writeUTF(cache.front.getKey().toString()); //Front
-        out.writeUTF(cache.back.getKey().toString()); //Back
+        SmartWriter out = new SmartWriter();
+        out.writeString(cache.left.getKey().toString()); //Left
+        out.writeString(cache.right.getKey().toString()); //Right
+        out.writeString(cache.front.getKey().toString()); //Front
+        out.writeString(cache.back.getKey().toString()); //Back
 
         if (Util.isPaperSupported() && cache.item != null) {
             out.writeByte(1);
-            out.write(cache.item.serializeAsBytes());
+            out.writeByteArray(cache.item.serializeAsBytes());
         } else {
             out.writeByte(0);
         }
@@ -36,23 +38,22 @@ public class PotWrapper implements Wrapper<DecoratedPot, PotWrapper.InternalPot>
         pot.right = baseTileState.getSherd(DecoratedPot.Side.RIGHT);
         pot.front = baseTileState.getSherd(DecoratedPot.Side.FRONT);
         pot.back = baseTileState.getSherd(DecoratedPot.Side.BACK);
-        pot.item = baseTileState.getInventory().getItem();
+        pot.item = baseTileState.getSnapshotInventory().getItem();
 
         return pot;
     }
 
     @Override
     public PotWrapper.InternalPot read(byte[] bytes) {
-        ByteArrayInputStream inStream = new ByteArrayInputStream(bytes);
-        ByteArrayDataInput in = ByteStreams.newDataInput(inStream);
+        SmartReader in = new SmartReader(bytes);
         InternalPot pot = new InternalPot();
-        pot.left = Material.matchMaterial(in.readUTF());
-        pot.right = Material.matchMaterial(in.readUTF());
-        pot.front = Material.matchMaterial(in.readUTF());
-        pot.back = Material.matchMaterial(in.readUTF());
+        pot.left = Material.matchMaterial(in.getString());
+        pot.right = Material.matchMaterial(in.getString());
+        pot.front = Material.matchMaterial(in.getString());
+        pot.back = Material.matchMaterial(in.getString());
 
-        if (in.readByte() == 1) {
-            pot.item = ItemStack.deserializeBytes(inStream.readAllBytes());
+        if (in.get() == 1) {
+            pot.item = ItemStack.deserializeBytes(in.getByteArray());
         }
 
         return pot;

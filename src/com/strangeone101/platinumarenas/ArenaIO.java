@@ -34,7 +34,7 @@ public class ArenaIO {
     private static final byte KEY_SPLIT = '\u0003';
     private static final byte ARENASECTION_SPLIT = '\u0004';
 
-    public static final int FILE_VERSION = 5;
+    public static final int FILE_VERSION = 6;
 
     /**
      * Saves an arena to disk.

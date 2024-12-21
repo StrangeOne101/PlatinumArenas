@@ -333,7 +333,7 @@ public class Arena {
                 sectionStarts.add(start);
                 sectionEnds.add(end);
 
-                //PlatinumArenas.INSTANCE.getLogger().info("Debug: " + start.toString() + ", " + end.toString());
+                //PlatinumArenas.debug("" + start.toString() + ", " + end.toString());
 
             }
         }
@@ -531,8 +531,8 @@ public class Arena {
                 loc = Arena.getLocationAtIndex(width, height, length, data.arena.corner1.getWorld(), data.index);
             } catch (ArithmeticException e) {
                 e.printStackTrace();
-                PlatinumArenas.INSTANCE.getLogger().info("Debug for error: " + width + " x " + height + " x " + length);
-                PlatinumArenas.INSTANCE.getLogger().info("Debug for error2: " +start + " | " + end + " || " + data.arena.getCorner1() + " | " + data.arena.getCorner2());
+                PlatinumArenas.debug( width + " x " + height + " x " + length);
+                PlatinumArenas.debug(start + " | " + end + " || " + data.arena.getCorner1() + " | " + data.arena.getCorner2());
                 return;
             }
 
@@ -583,7 +583,7 @@ public class Arena {
 
             Wrapper wrapper = WrapperRegistry.getFromMaterial(loc.getBlock().getType());
             //Test if the block has custom NBT
-            PlatinumArenas.INSTANCE.getLogger().info("Debug: Wrapper is " + wrapper + " for " + loc.getBlock().getType() + " index " + data.index);
+            PlatinumArenas.debug("Wrapper is " + wrapper + " for " + loc.getBlock().getType() + " index " + data.index);
             boolean blank = wrapper != null && loc.getBlock().getState() instanceof TileState && wrapper.isBlank((TileState) (loc.getBlock().getState()));
 
             if (data.blockTypes.length == 0) {
@@ -595,7 +595,7 @@ public class Arena {
                 //Record the NBT if it has any
                 if (wrapper != null && loc.getBlock().getState() instanceof TileState && !blank) {
                     Object cache = wrapper.cache((TileState) loc.getBlock().getState()); //Cache the NBT from the tilestate
-                    PlatinumArenas.INSTANCE.getLogger().info("Debug: Cache is " + cache + " for " + loc.getBlock().getType());
+                    PlatinumArenas.debug("Cache is " + cache + " for " + loc.getBlock().getType());
                     data.NBT.put(data.index, new ImmutablePair<>(wrapper, cache)); //Store in the section that the current block has the current NBT
                 }
 
@@ -615,7 +615,7 @@ public class Arena {
                 //Record the NBT if it has any
                 if (wrapper != null && loc.getBlock().getState() instanceof TileState && !blank) {
                     Object cache = wrapper.cache((TileState) loc.getBlock().getState()); //Cache the NBT from the tilestate
-                    PlatinumArenas.INSTANCE.getLogger().info("Debug: Cache is " + cache + " for " + loc.getBlock().getType());
+                    PlatinumArenas.debug("Cache is " + cache + " for " + loc.getBlock().getType());
                     data.NBT.put(data.index, new ImmutablePair<>(wrapper, cache)); //Store in the section that the current block has the current NBT
                 }
 
@@ -631,10 +631,10 @@ public class Arena {
                 continue;
             }
 
-            PlatinumArenas.INSTANCE.getLogger().info("Debug: Blank is " + blank + " for " + loc.getBlock().getType());
+            PlatinumArenas.debug("Blank is " + blank + " for " + loc.getBlock().getType());
             if (wrapper != null && loc.getBlock().getState() instanceof TileState && !blank) {
                 Object cache = wrapper.cache((TileState) loc.getBlock().getState()); //Cache the NBT from the tilestate
-                PlatinumArenas.INSTANCE.getLogger().info("Debug: Cache is " + cache + " for " + loc.getBlock().getType());
+                PlatinumArenas.debug("Cache is " + cache + " for " + loc.getBlock().getType());
                 data.NBT.put(data.index, new ImmutablePair<>(wrapper, cache)); //Store in the section that the current block has the current NBT
             }
 

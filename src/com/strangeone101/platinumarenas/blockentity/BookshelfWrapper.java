@@ -2,6 +2,8 @@ package com.strangeone101.platinumarenas.blockentity;
 
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
+import com.strangeone101.platinumarenas.buffers.SmartReader;
+import com.strangeone101.platinumarenas.buffers.SmartWriter;
 import org.bukkit.block.ChiseledBookshelf;
 import org.bukkit.inventory.ItemStack;
 
@@ -13,7 +15,7 @@ public class BookshelfWrapper implements Wrapper<ChiseledBookshelf, BookshelfWra
 
     public class BookshelfCache {
         public int lastInteracted;
-        public Map<Integer, ItemStack> books = new HashMap<>();
+        public Map<Byte, ItemStack> books = new HashMap<>();
 
         @Override
         public String toString() {
@@ -25,16 +27,15 @@ public class BookshelfWrapper implements Wrapper<ChiseledBookshelf, BookshelfWra
     }
 
     public byte[] write(BookshelfCache cache) {
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        SmartWriter out = new SmartWriter();
 
         out.writeInt(cache.lastInteracted);
         out.writeInt(cache.books.size());
 
-        for (Map.Entry<Integer, ItemStack> entry : cache.books.entrySet()) {
-            out.writeInt(entry.getKey());
+        for (Map.Entry<Byte, ItemStack> entry : cache.books.entrySet()) {
+            out.writeByte(entry.getKey());
             byte[] itemBytes = entry.getValue().serializeAsBytes();
-            out.writeInt(itemBytes.length);
-            out.write(itemBytes);
+            out.writeByteArray(itemBytes);
         }
 
         return out.toByteArray();
@@ -43,16 +44,15 @@ public class BookshelfWrapper implements Wrapper<ChiseledBookshelf, BookshelfWra
     public BookshelfCache read(byte[] bytes) {
         BookshelfCache cache = new BookshelfCache();
 
-        ByteBuffer buffer = ByteBuffer.allocate(bytes.length);
+        SmartReader buffer = new SmartReader(bytes);
 
         cache.lastInteracted = buffer.getInt();
 
         int mapLength = buffer.getInt();
         for (int i = 0; i < mapLength; i++) {
-            int slot = buffer.getInt();
-            int itemLength = buffer.getInt();
-            byte[] itemBytes = new byte[itemLength];
-            buffer.get(itemBytes);
+            byte slot = buffer.get();
+            byte[] itemBytes = buffer.getByteArray();
+
             cache.books.put(slot, ItemStack.deserializeBytes(itemBytes));
         }
 
@@ -64,8 +64,11 @@ public class BookshelfWrapper implements Wrapper<ChiseledBookshelf, BookshelfWra
 
         cache.lastInteracted = baseTileState.getLastInteractedSlot();
 
-        for (int i = 0; i < baseTileState.getInventory().getSize(); i++) {
-            cache.books.put(i, baseTileState.getInventory().getItem(i));
+        for (byte i = 0; i < baseTileState.getSnapshotInventory().getSize(); i++) {
+            ItemStack stack = baseTileState.getSnapshotInventory().getItem(i);
+            if (stack == null) continue;
+
+            cache.books.put(i, stack);
         }
 
         return cache;
@@ -74,8 +77,8 @@ public class BookshelfWrapper implements Wrapper<ChiseledBookshelf, BookshelfWra
     public ChiseledBookshelf place(ChiseledBookshelf baseTileState, BookshelfCache cache) {
         baseTileState.setLastInteractedSlot(cache.lastInteracted);
 
-        for (Map.Entry<Integer, ItemStack> entry : cache.books.entrySet()) {
-            baseTileState.getInventory().setItem(entry.getKey(), entry.getValue());
+        for (Map.Entry<Byte, ItemStack> entry : cache.books.entrySet()) {
+            baseTileState.getSnapshotInventory().setItem(entry.getKey(), entry.getValue());
         }
 
         return baseTileState;

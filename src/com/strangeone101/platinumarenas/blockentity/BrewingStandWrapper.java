@@ -17,12 +17,13 @@ public class BrewingStandWrapper extends ContainerWrapper<BrewingStand, BrewingS
         out.writeInt(cache.fuelLevel);
         out.write(container);
 
-        return container;
+        return out.toByteArray();
     }
 
     @Override
     public InternalContainer read(byte[] bytes) {
-        ByteBuffer buffer = ByteBuffer.allocate(bytes.length);
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.position(0);
 
         int brewingTime = buffer.getInt();
         int fuelLevel = buffer.getInt();

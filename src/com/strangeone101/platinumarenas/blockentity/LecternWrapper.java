@@ -2,6 +2,8 @@ package com.strangeone101.platinumarenas.blockentity;
 
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
+import com.strangeone101.platinumarenas.buffers.SmartReader;
+import com.strangeone101.platinumarenas.buffers.SmartWriter;
 import org.bukkit.block.Lectern;
 import org.bukkit.inventory.ItemStack;
 
@@ -11,7 +13,7 @@ public class LecternWrapper implements Wrapper<Lectern, LecternWrapper.LecturnCa
 
     @Override
     public byte[] write(LecturnCache cache) {
-        ByteArrayDataOutput out = ByteStreams.newDataOutput();
+        SmartWriter out = new SmartWriter();
 
         if (cache.book == null) {
             out.writeInt(-1);
@@ -19,15 +21,14 @@ public class LecternWrapper implements Wrapper<Lectern, LecternWrapper.LecturnCa
         }
         out.writeInt(cache.page);
         byte[] itemBytes = cache.book.serializeAsBytes();
-        out.writeInt(itemBytes.length);
-        out.write(itemBytes);
+        out.writeByteArray(itemBytes);
 
         return out.toByteArray();
     }
 
     @Override
     public LecturnCache read(byte[] bytes) {
-        ByteBuffer buffer = ByteBuffer.allocate(bytes.length);
+        SmartReader buffer = new SmartReader(bytes);
 
         LecturnCache cache = new LecturnCache();
 
@@ -36,24 +37,22 @@ public class LecternWrapper implements Wrapper<Lectern, LecternWrapper.LecturnCa
             return cache;
         }
 
-        byte[] containerBytes = new byte[bytes.length - 4];
-        buffer.get(containerBytes);
-
-        cache.book = ItemStack.deserializeBytes(containerBytes);
+        cache.page = page;
+        cache.book = ItemStack.deserializeBytes(buffer.getByteArray());
         return cache;
     }
 
     @Override
     public LecturnCache cache(Lectern baseTileState) {
         LecturnCache cache = new LecturnCache();
-        cache.book = baseTileState.getInventory().getItem(0);
+        cache.book = baseTileState.getSnapshotInventory().getItem(0);
         cache.page = baseTileState.getPage();
         return cache;
     }
 
     @Override
     public Lectern place(Lectern baseTileState, LecturnCache cache) {
-        baseTileState.getInventory().setItem(0, cache.book);
+        baseTileState.getSnapshotInventory().setItem(0, cache.book);
         baseTileState.setPage(cache.page);
         return baseTileState;
     }
@@ -65,7 +64,7 @@ public class LecternWrapper implements Wrapper<Lectern, LecternWrapper.LecturnCa
 
     @Override
     public boolean isBlank(Lectern tileState) {
-        return tileState.getInventory().isEmpty();
+        return tileState.getSnapshotInventory().isEmpty();
     }
 
 
