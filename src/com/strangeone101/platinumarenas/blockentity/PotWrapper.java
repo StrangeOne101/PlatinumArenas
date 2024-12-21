@@ -1,16 +1,11 @@
 package com.strangeone101.platinumarenas.blockentity;
 
-import com.google.common.io.ByteArrayDataInput;
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
 import com.strangeone101.platinumarenas.Util;
 import com.strangeone101.platinumarenas.buffers.SmartReader;
 import com.strangeone101.platinumarenas.buffers.SmartWriter;
 import org.bukkit.Material;
 import org.bukkit.block.DecoratedPot;
 import org.bukkit.inventory.ItemStack;
-
-import java.io.ByteArrayInputStream;
 
 public class PotWrapper implements Wrapper<DecoratedPot, PotWrapper.InternalPot> {
     @Override

@@ -1,17 +1,12 @@
 package com.strangeone101.platinumarenas.blockentity;
 
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
 import com.strangeone101.platinumarenas.PlatinumArenas;
 import com.strangeone101.platinumarenas.buffers.SmartReader;
 import com.strangeone101.platinumarenas.buffers.SmartWriter;
-import org.bukkit.Material;
 import org.bukkit.block.Container;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataContainer;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;

@@ -1,14 +1,11 @@
 package com.strangeone101.platinumarenas.blockentity;
 
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
 import com.strangeone101.platinumarenas.buffers.SmartReader;
 import com.strangeone101.platinumarenas.buffers.SmartWriter;
 import org.bukkit.block.ChiseledBookshelf;
 import org.bukkit.inventory.ItemStack;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 

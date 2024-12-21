@@ -1,16 +1,7 @@
 package com.strangeone101.platinumarenas.blockentity;
 
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
-import com.strangeone101.platinumarenas.PlatinumArenas;
-import com.strangeone101.platinumarenas.buffers.SmartWriter;
-import org.bukkit.Bukkit;
-import org.bukkit.NamespacedKey;
 import org.bukkit.block.Container;
-import org.bukkit.loot.LootTable;
 import org.bukkit.loot.Lootable;
-
-import java.nio.ByteBuffer;
 
 public class ChestWrapper extends LootableContainerWrapper<Container, LootableContainerWrapper.InternalContainer> {
 

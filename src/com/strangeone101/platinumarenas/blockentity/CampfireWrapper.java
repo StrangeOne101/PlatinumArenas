@@ -3,7 +3,6 @@ package com.strangeone101.platinumarenas.blockentity;
 import com.strangeone101.platinumarenas.buffers.SmartReader;
 import com.strangeone101.platinumarenas.buffers.SmartWriter;
 import org.bukkit.block.Campfire;
-import org.bukkit.block.Furnace;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.HashMap;

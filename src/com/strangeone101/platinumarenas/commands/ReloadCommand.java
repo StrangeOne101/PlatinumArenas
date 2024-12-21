@@ -7,9 +7,7 @@ import com.strangeone101.platinumarenas.PlatinumArenas;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class ReloadCommand extends ArenaCommand {
 

@@ -1,13 +1,9 @@
 package com.strangeone101.platinumarenas.blockentity;
 
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
 import com.strangeone101.platinumarenas.buffers.SmartReader;
 import com.strangeone101.platinumarenas.buffers.SmartWriter;
 import org.bukkit.block.Lectern;
 import org.bukkit.inventory.ItemStack;
-
-import java.nio.ByteBuffer;
 
 public class LecternWrapper implements Wrapper<Lectern, LecternWrapper.LecturnCache> {
 

@@ -6,13 +6,9 @@ import org.bukkit.DyeColor;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.block.Banner;
-import org.bukkit.block.TileState;
 import org.bukkit.block.banner.Pattern;
-import org.bukkit.block.banner.PatternType;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 

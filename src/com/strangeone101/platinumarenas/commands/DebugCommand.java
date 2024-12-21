@@ -16,7 +16,6 @@ import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -209,8 +208,6 @@ public class DebugCommand extends ArenaCommand {
             BLOCK_LISTENERS.put(((Player)sender).getUniqueId(), consumer);
             sender.sendMessage(ChatColor.GREEN + "Hit a block to see what sections are at this location");
         }
-
-
     }
 
     @Override

@@ -11,7 +11,6 @@ import com.strangeone101.platinumarenas.commands.ListCommand;
 import com.strangeone101.platinumarenas.commands.ReloadCommand;
 import com.strangeone101.platinumarenas.commands.ResetCommand;
 import org.bukkit.ChatColor;
-import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
