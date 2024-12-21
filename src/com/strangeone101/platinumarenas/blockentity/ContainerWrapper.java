@@ -8,7 +8,9 @@ import com.strangeone101.platinumarenas.buffers.SmartWriter;
 import org.bukkit.Material;
 import org.bukkit.block.Container;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataContainer;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,6 +37,7 @@ public abstract class ContainerWrapper<C extends Container, I extends ContainerW
             PlatinumArenas.debug("Writing " + itemBytes.length + " bytes");
             out.writeByteArray(itemBytes);
         }
+        out.writeByteArray(cache.persistentData);
 
         return out.toByteArray();
     }
@@ -56,6 +59,7 @@ public abstract class ContainerWrapper<C extends Container, I extends ContainerW
             container.items.put(slot, stack);
             PlatinumArenas.INSTANCE.getLogger().info("Loaded " + stack + " on slot " + slot);
         }
+        container.persistentData = buffer.getByteArray();
 
         return container;
     }
@@ -75,6 +79,12 @@ public abstract class ContainerWrapper<C extends Container, I extends ContainerW
             PlatinumArenas.debug("item is " + stack.toString() + " in slot " + i);
             container.items.put(i, stack.clone());
         }
+        try {
+            container.persistentData = baseTileState.getPersistentDataContainer().serializeToBytes();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
         return container;
     }
 
@@ -89,6 +99,11 @@ public abstract class ContainerWrapper<C extends Container, I extends ContainerW
             PlatinumArenas.debug("item placed is " + entry.getValue().toString() + " in slot " + entry.getKey());
         }
         baseTileState.getSnapshotInventory().setContents(contents);
+        try {
+            baseTileState.getPersistentDataContainer().readFromBytes(cache.persistentData);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
         return baseTileState;
     }
@@ -97,6 +112,7 @@ public abstract class ContainerWrapper<C extends Container, I extends ContainerW
         public Map<Byte, ItemStack> items = new HashMap<>();
         public String lock;
         public String customName;
+        public byte[] persistentData;
     }
 
     public abstract I create();

@@ -71,6 +71,7 @@ public class LecternWrapper implements Wrapper<Lectern, LecternWrapper.LecturnCa
     public class LecturnCache {
         public int page;
         public ItemStack book;
+        public byte[] persistentData;
 
         @Override
         public String toString() {

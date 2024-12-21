@@ -5,6 +5,8 @@ import com.strangeone101.platinumarenas.buffers.SmartWriter;
 import org.bukkit.block.Beacon;
 import org.bukkit.potion.PotionEffectType;
 
+import java.io.IOException;
+
 public class BeaconWrapper implements Wrapper<Beacon, BeaconWrapper.InternalBeacon> {
 
     @Override
@@ -15,6 +17,8 @@ public class BeaconWrapper implements Wrapper<Beacon, BeaconWrapper.InternalBeac
 
         out.writeString(effect1);
         out.writeString(effect2);
+
+        out.writeByteArray(cache.persistentData);
 
         return out.toByteArray();
     }
@@ -27,6 +31,11 @@ public class BeaconWrapper implements Wrapper<Beacon, BeaconWrapper.InternalBeac
 
         if (cache.second == null && baseTileState.getPrimaryEffect().getAmplifier() > 0) {
             cache.second = cache.first;
+        }
+        try {
+            cache.persistentData = baseTileState.getPersistentDataContainer().serializeToBytes();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
         return cache;
     }
@@ -41,6 +50,7 @@ public class BeaconWrapper implements Wrapper<Beacon, BeaconWrapper.InternalBeac
         InternalBeacon cache = new InternalBeacon();
         cache.first = effect1.isEmpty() ? null : PotionEffectType.getByName(effect1);
         cache.second = effect2.isEmpty() ? null : PotionEffectType.getByName(effect2);
+        cache.persistentData = buff.getByteArray();
 
         return cache;
     }
@@ -49,6 +59,11 @@ public class BeaconWrapper implements Wrapper<Beacon, BeaconWrapper.InternalBeac
     public Beacon place(Beacon baseTileState, InternalBeacon cache) {
         baseTileState.setPrimaryEffect(cache.first);
         baseTileState.setSecondaryEffect(cache.second);
+        try {
+            baseTileState.getPersistentDataContainer().readFromBytes(cache.persistentData);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         return baseTileState;
     }
 
@@ -59,11 +74,12 @@ public class BeaconWrapper implements Wrapper<Beacon, BeaconWrapper.InternalBeac
 
     @Override
     public boolean isBlank(Beacon tileState) {
-        return tileState.getPrimaryEffect() == null && tileState.getSecondaryEffect() == null;
+        return tileState.getPrimaryEffect() == null && tileState.getSecondaryEffect() == null && tileState.getPersistentDataContainer().isEmpty();
     }
 
     public static class InternalBeacon {
         PotionEffectType first, second;
+        byte[] persistentData;
 
         @Override
         public String toString() {

@@ -7,6 +7,7 @@ import com.strangeone101.platinumarenas.buffers.SmartWriter;
 import org.bukkit.block.ChiseledBookshelf;
 import org.bukkit.inventory.ItemStack;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,6 +17,7 @@ public class BookshelfWrapper implements Wrapper<ChiseledBookshelf, BookshelfWra
     public class BookshelfCache {
         public int lastInteracted;
         public Map<Byte, ItemStack> books = new HashMap<>();
+        public byte[] persistentData;
 
         @Override
         public String toString() {
@@ -37,6 +39,7 @@ public class BookshelfWrapper implements Wrapper<ChiseledBookshelf, BookshelfWra
             byte[] itemBytes = entry.getValue().serializeAsBytes();
             out.writeByteArray(itemBytes);
         }
+        out.writeByteArray(cache.persistentData);
 
         return out.toByteArray();
     }
@@ -56,6 +59,8 @@ public class BookshelfWrapper implements Wrapper<ChiseledBookshelf, BookshelfWra
             cache.books.put(slot, ItemStack.deserializeBytes(itemBytes));
         }
 
+        cache.persistentData = buffer.getByteArray();
+
         return cache;
     }
 
@@ -71,6 +76,12 @@ public class BookshelfWrapper implements Wrapper<ChiseledBookshelf, BookshelfWra
             cache.books.put(i, stack);
         }
 
+        try {
+            cache.persistentData = baseTileState.getPersistentDataContainer().serializeToBytes();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
         return cache;
     }
 
@@ -79,6 +90,12 @@ public class BookshelfWrapper implements Wrapper<ChiseledBookshelf, BookshelfWra
 
         for (Map.Entry<Byte, ItemStack> entry : cache.books.entrySet()) {
             baseTileState.getSnapshotInventory().setItem(entry.getKey(), entry.getValue());
+        }
+
+        try {
+            baseTileState.getPersistentDataContainer().readFromBytes(cache.persistentData);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
 
         return baseTileState;

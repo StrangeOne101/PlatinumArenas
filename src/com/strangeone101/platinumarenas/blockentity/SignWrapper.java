@@ -48,6 +48,8 @@ public class SignWrapper implements Wrapper<Sign, SignWrapper.InternalSign> {
         }
         out.writeByte(backColor);
 
+        out.writeByteArray(sign.persistentData);
+
         return out.toByteArray();
     }
 
@@ -74,6 +76,13 @@ public class SignWrapper implements Wrapper<Sign, SignWrapper.InternalSign> {
             //Add the back lines
             sign.lines.addAll(Arrays.asList(baseTileState.getSide(Side.BACK).getLines()));
         }
+
+        try {
+            sign.persistentData = baseTileState.getPersistentDataContainer().serializeToBytes();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         return sign;
     }
 
@@ -107,6 +116,9 @@ public class SignWrapper implements Wrapper<Sign, SignWrapper.InternalSign> {
             DyeColor backColor = DyeColor.values()[byteBackColor];
             cache.backColor = backColor;
         }
+
+        cache.persistentData = buffer.getByteArray();
+
         return cache;
     }
 
@@ -124,6 +136,13 @@ public class SignWrapper implements Wrapper<Sign, SignWrapper.InternalSign> {
             baseTileState.getSide(Side.BACK).setColor(cache.backColor);
             baseTileState.getSide(Side.BACK).setGlowingText(cache.backGlow);
         }
+
+        try {
+            baseTileState.getPersistentDataContainer().readFromBytes(cache.persistentData);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         return baseTileState;
     }
 
@@ -134,7 +153,7 @@ public class SignWrapper implements Wrapper<Sign, SignWrapper.InternalSign> {
 
     @Override
     public boolean isBlank(Sign tileState) {
-        return tileState.getLines().length == 0 || Arrays.stream(tileState.getLines()).allMatch(StringUtils::isEmpty);
+        return tileState.getLines().length == 0 || Arrays.stream(tileState.getLines()).allMatch(StringUtils::isEmpty) && tileState.getPersistentDataContainer().isEmpty();
     }
 
     protected static class InternalSign {
@@ -143,6 +162,7 @@ public class SignWrapper implements Wrapper<Sign, SignWrapper.InternalSign> {
         private List<String> lines = new ArrayList<>();
         private boolean glow = false;
         private boolean backGlow = false;
+        private byte[] persistentData = new byte[0];
 
         @Override
         public String toString() {

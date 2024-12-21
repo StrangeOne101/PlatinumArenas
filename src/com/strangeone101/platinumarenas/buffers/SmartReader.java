@@ -17,26 +17,44 @@ public class SmartReader {
     }
 
     public byte get() {
+        if (buffer.remaining() < 1) { //So older arenas don't throw exceptions but just have blank data instead
+            return 0;
+        }
         return buffer.get();
     }
 
     public int getInt() {
+        if (buffer.remaining() < 4) { //So older arenas don't throw exceptions but just have blank data instead
+            return 0;
+        }
         return buffer.getInt();
     }
 
     public long getLong() {
+        if (buffer.remaining() < 8) { //So older arenas don't throw exceptions but just have blank data instead
+            return 0;
+        }
         return buffer.getLong();
     }
 
     public short getShort() {
+        if (buffer.remaining() < 2) { //So older arenas don't throw exceptions but just have blank data instead
+            return 0;
+        }
         return buffer.getShort();
     }
 
     public double getDouble() {
+        if (buffer.remaining() < 8) { //So older arenas don't throw exceptions but just have blank data instead
+            return 0;
+        }
         return buffer.getDouble();
     }
 
     public UUID getUUID() {
+        if (buffer.remaining() < 16) { //So older arenas don't throw exceptions but just have blank data instead
+            return new UUID(0, 0);
+        }
         return new UUID(buffer.getLong(), buffer.getLong());
     }
 

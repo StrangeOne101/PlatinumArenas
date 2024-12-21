@@ -75,6 +75,7 @@ public class WrapperRegistry {
             register(new BrewingStandWrapper(), Material.BREWING_STAND);
             register(new LecternWrapper(), Material.LECTERN);
             register(new CampfireWrapper(), Material.CAMPFIRE, Material.SOUL_CAMPFIRE);
+            register(new SuspiciousSandWrapper(), Material.SUSPICIOUS_SAND, Material.SUSPICIOUS_GRAVEL);
 
             if (mcVersion >= 1193) {
                 register(new BookshelfWrapper(), Material.CHISELED_BOOKSHELF);
