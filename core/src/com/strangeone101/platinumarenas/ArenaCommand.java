@@ -10,6 +10,7 @@ import com.strangeone101.platinumarenas.commands.InfoCommand;
 import com.strangeone101.platinumarenas.commands.ListCommand;
 import com.strangeone101.platinumarenas.commands.ReloadCommand;
 import com.strangeone101.platinumarenas.commands.ResetCommand;
+import com.strangeone101.platinumarenas.commands.TimerCommand;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -36,6 +38,7 @@ public abstract class ArenaCommand {
         this.command = command;
         this.description = description;
         this.usage = usage;
+        this.aliases = aliases;
 
         subcommands.put(command.toLowerCase(), this);
     }
@@ -83,28 +86,56 @@ public abstract class ArenaCommand {
 
     }
 
-    static CommandExecutor getCommandExecutor() {
-        final CommandExecutor exe = (sender, cmd, label, args) -> {
-            if (args.length > 0) {
-                for (String s : subcommands.keySet()) {
-                    if (args[0].equalsIgnoreCase(s) || Arrays.asList(subcommands.get(s).getAliases()).contains(args[0].toLowerCase())) {
-                        subcommands.get(s).execute(sender, new ArrayList<>(Arrays.asList(Arrays.copyOfRange(args, 1, args.length))));
-                        return true;
-                    }
-                }
+    private static ArenaCommand findSubcommand(String string) {
+        for (String s : subcommands.keySet()) {
+            ArenaCommand subcommand = subcommands.get(s);
+            if (string.equalsIgnoreCase(s) || Arrays.asList(subcommand.getAliases()).contains(string.toLowerCase())) {
+                return subcommand;
             }
-            help(sender);
-            return true;
-        };
+        }
+
+        return null;
+    }
+
+    public static boolean hasSubcommand(String string) {
+        return findSubcommand(string) != null;
+    }
+
+    public static List<String> getSubcommandNames() {
+        LinkedHashSet<String> commands = new LinkedHashSet<>();
+        for (ArenaCommand command : subcommands.values()) {
+            commands.add(command.getCommand());
+        }
+
+        return new ArrayList<>(commands);
+    }
+
+    public static boolean dispatch(CommandSender sender, List<String> args) {
+        if (args.size() > 0) {
+            ArenaCommand subcommand = findSubcommand(args.get(0));
+            if (subcommand != null) {
+                subcommand.execute(sender, new ArrayList<>(args.subList(1, args.size())));
+                return true;
+            }
+        }
+
+        help(sender);
+        return false;
+    }
+
+    static CommandExecutor getCommandExecutor() {
+        final CommandExecutor exe = (sender, cmd, label, args) ->
+                dispatch(sender, new ArrayList<>(Arrays.asList(args)));
         return exe;
     }
 
     static TabCompleter getTabCompleter() {
         final TabCompleter completer = (sender, cmd, label, args) -> {
             if (args.length > 1) {
-                if (subcommands.containsKey(args[0].toLowerCase())) {
+                ArenaCommand subcommand = findSubcommand(args[0]);
+                if (subcommand != null) {
                     List<String> listArgs = new ArrayList<>(Arrays.asList(Arrays.copyOfRange(args, 1, args.length)));
-                    return subcommands.get(args[0].toLowerCase()).getTabCompletion(sender, listArgs).stream()
+                    return subcommand.getTabCompletion(sender, listArgs).stream()
                             .filter(s -> s.startsWith(listArgs.get(listArgs.size() - 1))).collect(Collectors.toList());
                 }
             } else {
@@ -129,5 +160,6 @@ public abstract class ArenaCommand {
         subcommands.put("info", new InfoCommand());
         subcommands.put("reload", new ReloadCommand());
         subcommands.put("debug", new DebugCommand());
+        subcommands.put("timer", new TimerCommand());
     }
 }
