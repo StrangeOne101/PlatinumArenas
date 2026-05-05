@@ -18,6 +18,20 @@ To reset an arena, simply do `/arena reset <arena> [speed]`. Cancel the reset wi
 
 <p align="center"><img src="docs/reset_forest.gif" height=239 width =425 /></p>
 
+## Timers
+
+Arena commands can now be scheduled with `/arena timer`. The timer syntax supports recurring schedules with `every`, delayed starts with `in` and fixed times with `at`.
+
+Examples:
+
+- `/arena timer every 24h in 10m reset fast`
+- `/arena timer in 2h reset normal`
+- `/arena timer every 1d at 12pm reset fast`
+- `/arena timer every 48h reset slow`
+- `/arena timer <arena> every 24h reset fast`
+- `/arena timer list`
+- `/arena timer remove <id>`
+
 ## Showing Arena Information
 
 Arenas can be displayed with `/arena list`. You can hover over arenas to display basic information about them, as well as click them to teleport the arenas. 
@@ -42,6 +56,7 @@ An arena's border can be toggled with `/arena border <name>`. This can allow you
 - `platinumarenas.info` - Allows more arena information to be viewed
 - `platinumarenas.border` - Allows toggling the visibility of arena borders
 - `platinumarenas.reload` - Allows reloading of the plugin
+- `platinumarenas.timer` - Allows scheduling arena timers
 - `platinumarenas.reset.instant` - Allows you to use the instant speed. Has it's own permission because it's dangerous.
 - `platinumarenas.debug` - Allows use of the debug command
 

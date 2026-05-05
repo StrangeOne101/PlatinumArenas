@@ -24,7 +24,11 @@ permissions:
          platinumarenas.remove: true
          platinumarenas.debug: true
          platinumarenas.info: true
+         platinumarenas.timer: true
       description: Use the platinumarenas command
    platinumarenas.reset.instant:
       description: Reset arenas instantly
+      default: false
+   platinumarenas.timer:
+      description: Schedule arena timers
       default: false

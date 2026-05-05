@@ -4,6 +4,7 @@ import com.strangeone101.platinumarenas.ArenaCommand;
 import com.strangeone101.platinumarenas.ArenaIO;
 import com.strangeone101.platinumarenas.ConfigManager;
 import com.strangeone101.platinumarenas.PlatinumArenas;
+import com.strangeone101.platinumarenas.TimerManager;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
@@ -25,6 +26,7 @@ public class ReloadCommand extends ArenaCommand {
         ArenaIO.loadAllArenas();
         ConfigManager.setup();
         ResetCommand.ResetSpeed.reload();
-        sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Arenas and config reloaded!");
+        TimerManager.reload();
+        sender.sendMessage(PlatinumArenas.PREFIX + ChatColor.GREEN + " Arenas, config and timers reloaded!");
     }
 }

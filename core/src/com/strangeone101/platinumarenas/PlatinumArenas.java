@@ -56,7 +56,13 @@ public class PlatinumArenas extends JavaPlugin {
         getLogger().info("PlatinumArenas Enabled!");
         getLogger().info("Loading arenas... this will be done async.");
 
+        TimerManager.reload();
         async(ArenaIO::loadAllArenas);
+    }
+
+    @Override
+    public void onDisable() {
+        TimerManager.shutdown();
     }
 
     /**
